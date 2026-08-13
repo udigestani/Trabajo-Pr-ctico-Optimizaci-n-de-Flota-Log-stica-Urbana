@@ -1,6 +1,6 @@
 # Tu implementacion va aqui
 def hola_mundo():
-    return "hola_mundo. pusheo pusheo la wave"
+    return "hola_mundo"
 
 
 def main():
