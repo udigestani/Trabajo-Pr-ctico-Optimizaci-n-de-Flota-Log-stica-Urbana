@@ -4,7 +4,7 @@ def hola_mundo():
 
 
 def main():
-    # Aqui ejecutas tus soluciones
+    # Aqui ejecutas tus soluciones hola
     print(hola_mundo())
 
 
