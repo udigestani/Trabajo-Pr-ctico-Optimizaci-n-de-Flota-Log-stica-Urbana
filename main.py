@@ -3,64 +3,89 @@ def hola_mundo():
     return "hola_mundo"
 
 
-class COMPROBANTE:
-    def __init__(self, Id, Solicitud, Fecha_Hora, Monto, Receptor):
-        self.Id = Id
-        self.Solicitud = Solicitud
+
+class Comprobante:
+    curr_id = 0
+    def __init__(self, Fecha_Hora, Monto, Receptor):
         self.Fecha_Hora = Fecha_Hora
         self.Monto = Monto
         self.Receptor = Receptor
+        Comprobante.curr_id += 1
+        self.Id = Comprobante.curr_id
 
 
-class SOLICITUD:
-    def __init__(self,Id,Articulos,Ubi_Ini,Ubi_Desti,Horario,Comprobante,Estado):
-        self.Id = Id
+class Solicitud:
+    curr_id = 0
+    def __init__(self,Articulos,Ubi_Ini,Ubi_Desti,Horario,Estado):
         self.Articulos = Articulos
         self.Ubi_Ini = Ubi_Ini
         self.Ubi_Desti = Ubi_Desti
         self.Horario = Horario
-        self.Comprobante = Comprobante??
         self.Estado = Estado
+        Solicitud.curr_id += 1
+        self.Id = Solicitud.curr_id
 
-class ARTICULO:
-    def __init__(self,Id,Solicitud,Peso_Volumen):
-        self.Id = Id
+    def generar_comprobante(self, Fecha_Hora, Monto, Receptor):
+        self.Comprobante = Comprobante(Fecha_Hora, Monto, Receptor)
+        return self.Comprobante
+
+class Articulo:
+    curr_id = 0
+    def __init__(self,Solicitud,Peso_Volumen):
         self.Solicitud = Solicitud
         self.Peso_Volumen = Peso_Volumen
+        Articulo.curr_id += 1
+        self.Id = Articulo.curr_id
 
-class VIAJE:
-    def __init__(self,Id,Transporte,Deposito,Solicitud,Horario,Estado,Paradas,Incidentes):
-        self.Id = Id
+class Viaje:
+    curr_id = 0
+    def __init__(self,Transporte,Deposito,Solicitud,Horario,Estado):
         self.Transporte = Transporte??
         self.Deposito = Deposito
         self.Solicitud = Solicitud??
         self.Horario = Horario
         self.Estado = Estado
-        self.Paradas = Paradas??
-        self.Incidentes = Incidentes??
+        self.Paradas = []
+        Viaje.curr_id += 1
+        self.Id = Viaje.curr_id
+    def registrar_incidente(self, Tipo, Fecha, Descripcion):
+        self.Incidente = Incidente(Tipo, Fecha, Descripcion)
+        return self.Incidente
+    def agregar_parada(self, Orden, Hora_prev, Hora_real, Ubicacion):
+        parada = Parada(Orden, Hora_prev, Hora_real, Ubicacion)
+        self.Paradas.append(parada)
+        return parada
 
-class INCIDENTE:
-    def __init__(self,Id,Tipo,Fecha,Descripcion,Viaje):
-        self.Id = Id
+class Incidente:
+    curr_id = 0
+    def __init__(self,Tipo,Fecha,Descripcion):
         self.Tipo = Tipo
         self.Fecha = Fecha
         self.Descripcion = Descripcion
-        self.Viaje = Viaje??
+        Incidente.curr_id += 1
+        self.Id = Incidente.curr_id
 
-class PARADA:
-    def __init__(self,Id,Orden,Hora_prev,Hora_real,Ubicacion):
-        self.Id = Id
+class Parada:
+    curr_id = 0
+    def __init__(self,Orden,Hora_prev,Hora_real,Ubicacion):
         self.Orden = Orden
         self.Hora_prev = Hora_prev
         self.Hora_real = Hora_real
         self.Ubicacion = Ubicacion??
+        Parada.curr_id += 1
+        self.Id = Parada.curr_id
 
-class UBICACION:
-    def __init__(self,Id,Descripcion):
-        self.Id = Id
+class Ubicacion:
+    curr_id = 0                 
+    def __init__(self,Descripcion,Latitud,Longitud):
         self.Descripcion = Descripcion
+        self.Latitud = Latitud
+        self.Longitud = Longitud
+        Ubicacion.curr_id += 1      
+        self.Id = Ubicacion.curr_id         
 
-class TRANSPORTE:
+class Transporte:
+    curr_id = 0
     def __init__(self,Capacidad,Peso_Max,Velocidad,Costo_Viaje,Factor_Ambiental,Solicitud):
         self.Capacidad = Capacidad
         self.Peso_Max = Peso_Max
@@ -68,11 +93,15 @@ class TRANSPORTE:
         self.Costo_Viaje = Costo_Viaje
         self.Factor_Ambiental = Factor_Ambiental
         self.Solicitud = Solicitud??
+        Transporte.curr_id += 1      
+        self.Id = Transporte.curr_id         
+        
+    
 
 def main():
     # Aqui ejecutas tus soluciones hola
     print(hola_mundo())
-
+   
 
 # No cambiar a partir de aqui
 if __name__ == "__main__":
