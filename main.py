@@ -54,11 +54,20 @@ class PARADA:
         self.Hora_prev = Hora_prev
         self.Hora_real = Hora_real
         self.Ubicacion = Ubicacion??
-        
+
 class UBICACION:
     def __init__(self,Id,Descripcion):
         self.Id = Id
         self.Descripcion = Descripcion
+
+class TRANSPORTE:
+    def __init__(self,Capacidad,Peso_Max,Velocidad,Costo_Viaje,Factor_Ambiental,Solicitud):
+        self.Capacidad = Capacidad
+        self.Peso_Max = Peso_Max
+        self.Velocidad = Velocidad
+        self.Costo_Viaje = Costo_Viaje
+        self.Factor_Ambiental = Factor_Ambiental
+        self.Solicitud = Solicitud??
 
 def main():
     # Aqui ejecutas tus soluciones hola
