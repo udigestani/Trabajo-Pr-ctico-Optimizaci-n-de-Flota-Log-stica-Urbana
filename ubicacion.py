@@ -5,4 +5,4 @@ class Ubicacion:
         self.latitud = latitud
         self.longitud = longitud
         Ubicacion.curr_id += 1      
-        self.id = Ubicacion.curr_id
+        self.id = Ubicacion.curr_id  
