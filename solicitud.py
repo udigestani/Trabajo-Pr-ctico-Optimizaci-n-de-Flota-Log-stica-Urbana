@@ -1,12 +1,14 @@
 from comprobante import Comprobante
 from viaje import Viaje
+from articulo import Articulo
 
 class Solicitud:
     curr_id = 0
+    # Me parece que ubi_ini no va, porque solicitud no va a saber si es la 1° del viaje (sale del deposito), u otra (sale del lugar de la anterior)
     def __init__(self, articulos, ubi_ini , ubi_desti, horario, estado):
         self.articulos = articulos
         self.ubi_ini = ubi_ini
-        self.ubi_desti = ubi_desti
+        # self.ubi_desti = ubi_desti
         self.horario = horario
         self.estado = estado
         Solicitud.curr_id += 1
@@ -20,16 +22,28 @@ class Solicitud:
         if self.estado == "pendiente":
             self.viaje = Viaje(transporte, deposito,horario, estado)
             self.estado = "realizada"
-            return self.viaje    
-    def calcular_peso_total(self):
+            return self.viaje
+    def calcular_peso(self):
         total = 0
         for articulo in self.articulos:
-            total += articulo.peso
+            total += articulo.getter_peso()
         return total
 
+    def calcular_volumen(self):
+        total = 0
+        for articulo in self.articulos:
+            total += articulo.getter_volumen()
+        return total
+    
 
 
 
+
+art1 = Articulo("Maquinaria", 200, 4)
+art2 = Articulo("Maquinaria", 150, 3.5)
+
+solicitud = Solicitud([art1, art2], "ubi1", "ubi2", "10:00", "")
+print(solicitud.calcular_peso(), solicitud.calcular_volumen())
 solicitud1 = Solicitud(["articulo1", "articulo2"], "ubicacion1", "ubicacion2", "10:00", "pendiente")
 solicitud1.generar_comprobante("2023-06-01 10:00", 100.0, "receptor1")
 print(solicitud1.comprobante.id)
