@@ -12,6 +12,9 @@ class Transporte:
         Transporte.curr_id += 1      
         self.id = Transporte.curr_id
 
+    def calcular_impacto_ambiental(self, distancia, peso):
+        return self.factor_ambiental * distancia
+
 class Furgoneta(Transporte):
     PESO_MAX = 500
     VOLUMEN = 8
@@ -65,4 +68,7 @@ class Camion(Transporte):
             self.COSTO_PARADA, 
             self.FACTOR_AMBIENTAL
         )
+
+    def calcular_impacto_ambiental(self, distancia, peso):
+        return (self.factor_ambiental + peso/10000)*distancia
 

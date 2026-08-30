@@ -1,15 +1,16 @@
 from comprobante import Comprobante
 from viaje import Viaje
 from articulo import Articulo
+from ubicacion import Ubicacion
 
 class Solicitud:
     curr_id = 0
     # Me parece que ubi_ini no va, porque solicitud no va a saber si es la 1° del viaje (sale del deposito), u otra (sale del lugar de la anterior)
-    def __init__(self, articulos, ubi_ini , ubi_desti, horario, estado):
+    def __init__(self, articulos, ubi_ini , ubi_destino, llegada_prevista, estado):
         self.articulos = articulos
-        self.ubi_ini = ubi_ini
-        # self.ubi_desti = ubi_desti
-        self.horario = horario
+        # self.ubi_ini = ubi_ini # ?? Va?
+        self.ubi_destino = self.comprobar_ubicacion(ubi_destino)
+        self.llegada_prevista = llegada_prevista
         self.estado = estado
         Solicitud.curr_id += 1
         self.id = Solicitud.curr_id
@@ -17,6 +18,15 @@ class Solicitud:
     def generar_comprobante(self, fecha_Hora, monto, receptor):
         self.comprobante = Comprobante(fecha_Hora, monto, receptor)
         return self.comprobante
+
+    @staticmethod
+    def comprobar_ubicacion(ubicacion):
+        if ubicacion.isinstance(Ubicacion):
+            return ubicacion
+        raise TypeError(f"La ubicacion debe ser de clase Ubicacion")
+
+    def getter_ubicacion(self):
+        return self.ubi_destino
 
     def setter_generar_viaje(self, transporte, deposito, horario, estado):
         if self.estado == "pendiente":
