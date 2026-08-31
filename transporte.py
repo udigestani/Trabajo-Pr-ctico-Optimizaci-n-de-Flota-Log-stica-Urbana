@@ -15,6 +15,8 @@ class Transporte:
     def calcular_impacto_ambiental(self, distancia, peso):
         return self.factor_ambiental * distancia
 
+    # No se necesitan validaciones acá no? Porque ya todos los números están sacados de los hijos
+
 class Furgoneta(Transporte):
     PESO_MAX = 500
     VOLUMEN = 8
