@@ -1,5 +1,5 @@
 from incidente import Incidente
-from parada import Parada
+from parada import Parada #me genera error no se xq
 from ubicacion import Ubicacion
 from transporte import Transporte
 
@@ -9,7 +9,7 @@ class Viaje:
     curr_id = 0
     def __init__(self, transporte, deposito, horario, estado = "PLANIFICADO"):
         # Dice que hay que tomar en cuenta las solicitudes. Habría que agregarlo por acá me parece
-        # self.transporte = validar_transporte(transporte)
+        self.transporte = self.validar_transporte(transporte)
         self.deposito = self.validar_deposito(deposito)
         self.horario = self.validar_horario(horario)
         self.estado = self.validar_estado(estado)
@@ -25,16 +25,16 @@ class Viaje:
         self.incidentes.append(incidente)
         return incidente
     
-    def agregar_parada(self, orden, hora_prev, hora_real, ubicacion):
-        parada = Parada(orden, hora_prev, hora_real, ubicacion)
+    def agregar_parada(self, orden, solicitud, hora_prev, hora_real):   
+        parada = Parada(orden, solicitud, hora_prev, hora_real)  # creo que aca deberia ser Parada(orden, solicitud, hora_prev, hora_real) en parada.py el constructor tiene estas entradas.
         self.paradas.append(parada)
         return parada
 
-    # @staticmethod
-    # def validar_transporte(transporte):
-    #     if isinstance(transporte, Transporte):
-    #         return transporte
-    #     raise TypeError(f"El transporte {transporte} debe ser de clase trasporte")
+    @staticmethod
+    def validar_transporte(transporte):
+        if isinstance(transporte, Transporte):
+            return transporte
+        raise TypeError(f"El transporte {transporte} debe ser de clase trasporte")
     
     @staticmethod
     def validar_deposito(deposito):

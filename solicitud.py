@@ -1,5 +1,5 @@
 from comprobante import Comprobante
-from viaje import Viaje
+from viaje import Viaje   #solicitud no deberia llamar viaje
 from articulo import Articulo
 from ubicacion import Ubicacion
 
@@ -24,12 +24,12 @@ class Solicitud:
     def getter_ubicacion(self):
         return self.ubi_destino
 
-    def setter_generar_viaje(self, transporte, deposito, horario, estado):
-        if self.estado == "pendiente":
-            self.viaje = Viaje(transporte, deposito,horario, estado)
-            self.estado = "realizada"
-            return self.viaje
-        
+    def setter_generar_viaje(self, transporte, deposito, horario, estado): #No deberia generar el viaje desde solicitud
+            if self.estado == "pendiente":
+                self.viaje = Viaje(transporte, deposito,horario, estado)
+                self.estado = "realizada"
+                return self.viaje
+            
     def calcular_peso(self):
         total = 0
         for articulo in self.articulos:
