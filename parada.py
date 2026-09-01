@@ -1,6 +1,8 @@
 from comprobante import Comprobante
 from solicitud import Solicitud
 
+from datetime import datetime
+
 class Parada:
     curr_id = 0
     id_comprobante = 0
@@ -8,8 +10,7 @@ class Parada:
     def __init__(self, orden, solicitud, hora_prev, hora_real):
         self.orden = self.valdar_orden(orden)
         self.solicitud = self.validar_solicitud(solicitud)
-        self.hora_prev = hora_prev
-        self.hora_real = hora_real
+        self.hora_prev, self.hora_real = self.validar_hora(hora_prev, hora_real)
         # self.ubicacion = ubicacion?? --> Ubicación dentro de solicitud?
         # self.ubicacion = solicitud.getter_ubicacion()
         Parada.curr_id += 1
@@ -38,6 +39,13 @@ class Parada:
             return solicitud
         raise TypeError(f"La solicitud {solicitud} debe ser un objeto de clase Solicitud")
 
-    
+    @staticmethod
+    def validar_hora(hora_prev, hora_real):
+        if not isinstance(hora_prev, datetime) or not isinstance(hora_real, datetime):
+            raise TypeError("hora_prev y hora_real deben ser objetos datetime")
+        else:
+            return hora_prev, hora_real
+
+        
     # @staticmethod
     # def validar_hora(hora):     ???

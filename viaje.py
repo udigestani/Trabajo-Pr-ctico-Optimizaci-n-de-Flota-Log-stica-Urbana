@@ -3,13 +3,15 @@ from parada import Parada
 from ubicacion import Ubicacion
 from transporte import Transporte
 
+from datetime import datetime
+
 class Viaje:
     curr_id = 0
     def __init__(self, transporte, deposito, horario, estado = "PLANIFICADO"):
         # Dice que hay que tomar en cuenta las solicitudes. Habría que agregarlo por acá me parece
         # self.transporte = validar_transporte(transporte)
         self.deposito = self.validar_deposito(deposito)
-        self.horario = horario
+        self.horario = self.validar_horario(horario)
         self.estado = self.validar_estado(estado)
 
         self.paradas = []
@@ -47,6 +49,14 @@ class Viaje:
         if estado not in("PLANIFICADO", "EN_CURSO", "FINALIZADO"):
             raise ValueError(f"El estado del viaje debe ser PLANIFICADO, EN_CURSO o FINALIZADO")
         return estado
+
+    @staticmethod
+    def validar_horario(horario):
+        if not isinstance(horario, datetime):
+            raise TypeError("El horario de salida del viaje debe ser un objeto datetime")
+        else:
+            return horario
+
 
     # @staticmethod
     # def validar_horario(horario):     #???
