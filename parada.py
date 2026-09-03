@@ -8,7 +8,7 @@ class Parada:
     id_comprobante = 0
 
     def __init__(self, orden, solicitud, hora_prev, hora_real):
-        self.orden = self.valdar_orden(orden)
+        self.orden = self.validar_orden(orden)
         self.solicitud = self.validar_solicitud(solicitud)
         self.hora_prev, self.hora_real = self.validar_hora(hora_prev, hora_real)
         # self.ubicacion = ubicacion?? --> Ubicación dentro de solicitud?
