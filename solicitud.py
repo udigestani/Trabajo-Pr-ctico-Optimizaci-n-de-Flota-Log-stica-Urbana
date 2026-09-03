@@ -1,5 +1,4 @@
 from comprobante import Comprobante
-from viaje import Viaje   #solicitud no deberia llamar viaje
 from articulo import Articulo
 from ubicacion import Ubicacion
 

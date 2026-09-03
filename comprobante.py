@@ -3,7 +3,8 @@ from datetime import datetime
 
 class Comprobante:
     curr_id = 0
-    def __init__(self, fecha_Hora, receptor):
+    def __init__(self,solicitud, fecha_Hora, receptor):
+        self.solicitud = self.validar_solicitud(solicitud)
         self.receptor = self.validar_receptor(receptor)
         self.fecha_Hora = self.validar_fecha_hora(fecha_Hora)
         Comprobante.curr_id += 1
