@@ -1,3 +1,5 @@
+from solicitud import solicitud 
+
 class Cliente:
      
     def __init__(self, nombre: str, dni: int, edad: int):
@@ -30,3 +32,8 @@ class Cliente:
                 return nombre
             raise ValueError(f"El nombre no puede ser vacío")
         raise TypeError(f"El nombre {nombre} debe ser una cadena str")
+    
+   
+    def crear_solicitud(self,articulos, ubi_ini , destino, ventana_inicio, ventana_fin, estado):
+        self.solicitud= solicitud(articulos, ubi_ini , destino, ventana_inicio, ventana_fin, estado)
+        return self.solicitud

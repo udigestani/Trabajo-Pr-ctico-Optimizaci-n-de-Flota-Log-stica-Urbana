@@ -1,18 +1,17 @@
 from comprobante import Comprobante
 from solicitud import Solicitud
-
 from datetime import datetime
 
 class Parada:
     curr_id = 0
     id_comprobante = 0
 
-    def __init__(self, orden, solicitud, hora_prev, hora_real):
+    def __init__(self, orden, solicitud, hora_prev, hora_real, resultado = "PENDIENTE"):
         self.orden = self.validar_orden(orden)
         self.solicitud = self.validar_solicitud(solicitud)
         self.hora_prev, self.hora_real = self.validar_hora(hora_prev, hora_real)
-        # self.ubicacion = ubicacion?? --> Ubicación dentro de solicitud?
-        # self.ubicacion = solicitud.getter_ubicacion()
+        self.resultado = resultado
+        
         Parada.curr_id += 1
         self.id = Parada.curr_id
         self.estado = "PENDIENTE"

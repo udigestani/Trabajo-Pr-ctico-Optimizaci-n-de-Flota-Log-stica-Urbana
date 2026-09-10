@@ -1,9 +1,7 @@
-from incidente import Incidente
-from parada import Parada #me genera error no se xq
-from ubicacion import Ubicacion
+from incidente import Incidente 
 from transporte import Transporte
-
 from datetime import datetime
+from solicitud import Solicitud
 
 class Viaje:
     curr_id = 0
@@ -14,7 +12,9 @@ class Viaje:
         self.horario = self.validar_horario(horario)
         self.estado = self.validar_estado(estado)
 
-        self.paradas = []
+        self.peso_total=0
+        self.volumen_total=0
+        self.solicitudes = []
         self.incidentes = []
         Viaje.curr_id += 1
         self.id = Viaje.curr_id
@@ -25,10 +25,22 @@ class Viaje:
         self.incidentes.append(incidente)
         return incidente
     
-    def agregar_parada(self, orden, solicitud, hora_prev, hora_real):   
-        parada = Parada(orden, solicitud, hora_prev, hora_real)  # creo que aca deberia ser Parada(orden, solicitud, hora_prev, hora_real) en parada.py el constructor tiene estas entradas.
-        self.paradas.append(parada)
-        return parada
+    def agregar_solicitud(self, articulos, destino, ventana_inicio, ventana_fin): 
+        peso = self.peso_total
+        volumen = self.volumen_total
+        for articulo in articulos:
+            peso += articulo.getter_peso()
+            volumen += articulo.getter_volumen()
+        if peso > self.transporte.peso_maximo:
+            raise ValueError(f"El peso total de la solicitud ({peso}) excede el peso máximo del transporte ({self.transporte.peso_maximo})")
+        elif volumen > self.transporte.volumen_maximo:
+            raise ValueError(f"El volumen total de la solicitud ({volumen}) excede el volumen máximo del transporte ({self.transporte.volumen_maximo})")
+        
+        self.peso_total += peso
+        self.volumen_total += volumen
+        solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
+        self.solicitudes.append(solicitud)
+        return solicitud
 
     @staticmethod
     def validar_transporte(transporte):
@@ -36,11 +48,11 @@ class Viaje:
             return transporte
         raise TypeError(f"El transporte {transporte} debe ser de clase trasporte")
     
-    @staticmethod
-    def validar_deposito(deposito):
-        if isinstance(deposito, Ubicacion):
-            return deposito
-        raise TypeError(f"El depósito {deposito} no es una ubicación")
+    # @staticmethod
+    # def validar_deposito(deposito):
+    #     if isinstance(deposito, Ubicacion):
+    #         return deposito
+    #     raise TypeError(f"El depósito {deposito} no es una ubicación")
 
     @staticmethod
     def validar_estado(estado):
