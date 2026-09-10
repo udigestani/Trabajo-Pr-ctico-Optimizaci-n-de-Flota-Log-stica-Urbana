@@ -7,7 +7,7 @@ from datetime import time
 class Solicitud:
     curr_id = 0
     # Me parece que ubi_ini no va, porque solicitud no va a saber si es la 1° del viaje (sale del deposito), u otra (sale del lugar de la anterior)
-    def __init__(self, articulos, ubi_ini , destino, ventana_inicio, ventana_fin, estado):
+    def __init__(self, articulos, destino, ventana_inicio, ventana_fin):
         self.articulos = self.validar_articulos(articulos)
         # self.ubi_ini = ubi_ini # ?? Va?
         self.destino = self.validar_ubicacion(destino)
@@ -43,13 +43,13 @@ class Solicitud:
     
     @staticmethod
     def validar_ubicacion(ubicacion):
-        if ubicacion.isinstance(Ubicacion): #creo que es isinstance(ubicacion, Ubicacion):
+        if isinstance(ubicacion, Ubicacion):#creo que es isinstance(ubicacion, Ubicacion):
             return ubicacion
         raise TypeError(f"La ubicacion debe ser de clase Ubicacion")
 
     @staticmethod
     def validar_articulos(articulos):
-        if articulos.isinstance(list): #creo que es isinstance(articulos, list):
+        if isinstance(articulos, list): #creo que es isinstance(articulos, list):
             for articulo in articulos:
                 if not isinstance(articulo, Articulo):
                     raise TypeError(f"La lista de articulos {articulos} contiene un articulo {articulo} no válido")

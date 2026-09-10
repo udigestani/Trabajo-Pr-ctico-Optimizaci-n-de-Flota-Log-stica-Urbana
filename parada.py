@@ -20,7 +20,7 @@ class Parada:
     def generar_comprobante(self, receptor, fecha):
         if self.estado == "PENDIENTE":
             self.estado = "ENTREGADA"
-            self.comprobante = Comprobante(self.solicitud, receptor, fecha)
+            self.comprobante = Comprobante(self.solicitud, fecha, receptor)
             return self.comprobante
         raise Exception(f"El estado de la parada ya es {self.estado}")
 
