@@ -1,5 +1,6 @@
 from datetime import datetime
 
+
 class Comprobante:
     curr_id = 0
     def __init__(self,solicitud, fecha_Hora, receptor,monto):
@@ -26,7 +27,7 @@ class Comprobante:
 
     @staticmethod
     def validar_solicitud(solicitud):
-        from solicitud import Solicitud    #El import esta aca xq sino no abre el archivo
+        from solicitud import Solicitud
         if not isinstance(solicitud, Solicitud):
             raise TypeError("La solicitud debe ser un objeto de la clase Solicitud")
         return solicitud
@@ -38,5 +39,5 @@ class Comprobante:
         if monto < 0:
             raise ValueError("El monto no puede ser negativo")
         return monto
-comp1=Comprobante("solicitud1", datetime(2023, 6, 1, 10, 0), "Juan Perez", 1500)
-print(comp1.id, comp1.solicitud, comp1.fecha_Hora, comp1.receptor, comp1.monto)
+# comp1=Comprobante("solicitud1", datetime(2023, 6, 1, 10, 0), "Juan Perez", 1500)
+# print(comp1.id, comp1.solicitud, comp1.fecha_Hora, comp1.receptor, comp1.monto)

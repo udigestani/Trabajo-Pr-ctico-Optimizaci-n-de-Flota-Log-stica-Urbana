@@ -28,4 +28,4 @@ class Articulo:
             raise ValueError(f"La descripcion {cadena} no debe estar vacia")
         raise TypeError(f"La descripcion {cadena} debe ser una cadena str")
 
-art1 = Articulo("Producto", 1, 7)
+# art1 = Articulo("Producto", 1, 7)

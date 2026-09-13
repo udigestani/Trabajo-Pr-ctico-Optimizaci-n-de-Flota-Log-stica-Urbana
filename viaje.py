@@ -1,6 +1,6 @@
 from incidente import Incidente 
 from transporte import Transporte
-from datetime import datetime
+from datetime import datetime, timedelta
 from solicitud import Solicitud
 
 class Viaje:
@@ -26,21 +26,27 @@ class Viaje:
         return incidente
     
     def agregar_solicitud(self, articulos, destino, ventana_inicio, ventana_fin): 
+        if self.estado != "PLANIFICADO":
+            raise ValueError(f"No se pueden agregar solicitudes a un viaje ya iniciado o terminado")
         peso = self.peso_total
         volumen = self.volumen_total
         for articulo in articulos:
             peso += articulo.getter_peso()
             volumen += articulo.getter_volumen()
-        if peso > self.transporte.peso_maximo:
-            raise ValueError(f"El peso total de la solicitud ({peso}) excede el peso máximo del transporte ({self.transporte.peso_maximo})")
-        elif volumen > self.transporte.volumen_maximo:
-            raise ValueError(f"El volumen total de la solicitud ({volumen}) excede el volumen máximo del transporte ({self.transporte.volumen_maximo})")
+        if peso > self.transporte.peso_max:
+            raise ValueError(f"El peso total de la solicitud ({peso}) excede el peso máximo del transporte ({self.transporte.peso_max})")
+        elif volumen > self.transporte.volumen:
+            raise ValueError(f"El volumen total de la solicitud ({volumen}) excede el volumen máximo del transporte ({self.transporte.volumen})")
+
+        nueva_solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
+        if not self.validar_recorrido(self.solicitudes + [nueva_solicitud]):
+            raise ValueError(f"La solicitud no cumple con las ventanas horarias")
         
-        self.peso_total += peso
-        self.volumen_total += volumen
-        solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
-        self.solicitudes.append(solicitud)
-        return solicitud
+        
+        self.peso_total = peso
+        self.volumen_total = volumen
+        self.solicitudes.append(nueva_solicitud)
+        return nueva_solicitud
 
     @staticmethod
     def validar_transporte(transporte):
@@ -70,10 +76,32 @@ class Viaje:
             return horario
 
 
-    # @staticmethod
-    # def validar_horario(horario):     #???
+    def validar_recorrido(self, recorrido_nuevo):
+        horario = self.horario
+        ubicacion = self.deposito
+        for solicitud in recorrido_nuevo:
+            lugar = solicitud.destino
+            distancia = self.matriz[ubicacion][lugar]
+            tiempo_hrs = distancia / self.transporte.velocidad
+            llegada = horario + timedelta(hours=tiempo_hrs)
+            if llegada > solicitud.ventana_fin:
+                return False
+            if llegada < solicitud.ventana_inicio:
+                llegada = solicitud.ventana_inicio
+            horario = llegada + timedelta(minutes=10)
+            ubicacion = lugar
+        distancia = self.matriz[ubicacion]["Deposito"]
+        tiempo_hrs = distancia / self.transporte.velocidad
+        llegada = horario + timedelta(hours=tiempo_hrs)
+        return True
 
 
+# matriz = {
+#         "Deposito": {"Ubic1": 15, "Ubic2":20, "Ubic3":18},
+#         "Ubic1": {"Deposito": 15, "Ubic2":10, "Ubic3":12},
+#         "Ubic2": {"Deposito": 20, "Ubic1":10, "Ubic3":14},
+#         "Ubic3": {"Deposito": 18, "Ubic1":12, "Ubic2":14}
+#     }
 
 
 

@@ -28,15 +28,19 @@ class Solicitud:
     #         total += articulo.getter_volumen()
     #     return total
     
-    # @staticmethod
-    # def validar_ubicacion(ubicacion):
-    #     if isinstance(ubicacion, Ubicacion):
-    #         return ubicacion
-    #     raise TypeError(f"La ubicacion debe ser de clase Ubicacion")
+    @staticmethod
+    def validar_ubicacion(ubicacion):
+        if isinstance(ubicacion, str):
+            if not ubicacion.strip():
+                raise ValueError(f"La ubicación debe ser no vacía")
+            return ubicacion
+        raise TypeError(f"La ubicacion debe ser una cadena str")
 
     @staticmethod
     def validar_articulos(articulos):
         if isinstance(articulos, list): #creo que es isinstance(articulos, list):
+            if len(articulos) == 0:
+                raise ValueError(f"La solicitud debe contener por lo menos un artículo")
             for articulo in articulos:
                 if not isinstance(articulo, Articulo):
                     raise TypeError(f"La lista de articulos {articulos} contiene un articulo {articulo} no válido")
@@ -46,7 +50,7 @@ class Solicitud:
     @staticmethod
     def validar_ventana_horaria(ventana_inicio, ventana_fin):
         if not isinstance(ventana_inicio, datetime) or not isinstance(ventana_fin, datetime):
-            raise TypeError("La ventana horaria debe estar compuesta por objetos time")
+            raise TypeError("La ventana horaria debe estar compuesta por objetos datetime")
         if ventana_inicio > ventana_fin:
             raise ValueError("El inicio de la ventana debe ser anterior o igual al fin")
         else:
@@ -56,8 +60,8 @@ class Solicitud:
 
 
 
-art1 = Articulo("Maquinaria", 200, 4)
-art2 = Articulo("Maquinaria", 150, 3.5)
+# art1 = Articulo("Maquinaria", 200, 4)
+# art2 = Articulo("Maquinaria", 150, 3.5)
 
 
 # solicitud = Solicitud([art1,art2,art2,art1,art2], ubi1, datetime(2023, 6, 1, 10, 0), datetime(2023, 6, 1, 13, 0))
