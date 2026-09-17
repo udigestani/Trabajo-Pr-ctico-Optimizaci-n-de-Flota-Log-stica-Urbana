@@ -1,21 +1,23 @@
 class PoliticaOrdenamiento:
     def sugerir_orden(self, deposito, solicitudes, matriz):
-        pass
+        raise NotImplementedError("Las subclases deben implementar sugerir_orden")
+
 
 class Vecinos(PoliticaOrdenamiento):
     def sugerir_orden(self, deposito, solicitudes, matriz):
         pendientes = list(solicitudes)
         orden = []
-        id_actual = deposito.id
-        while len(pendientes) > 0:
+        actual = deposito
+        while pendientes:
             siguiente = min(
                 pendientes,
-                key = lambda x: matriz.obtener_distancia(id_actual, x.destino.id)
+                key=lambda s: matriz.obtener_distancia(actual, s.destino)
             )
             orden.append(siguiente)
-            id_actual = siguiente.destino.id
+            actual = siguiente.destino
             pendientes.remove(siguiente)
         return orden
+
 
 class VentanasTiempo(PoliticaOrdenamiento):
     def sugerir_orden(self, deposito, solicitudes, matriz):

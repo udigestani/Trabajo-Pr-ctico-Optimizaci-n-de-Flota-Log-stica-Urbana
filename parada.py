@@ -11,15 +11,15 @@ class Parada:
         self.solicitud = self.validar_solicitud(solicitud)
         self.hora_prev, self.hora_real = self.validar_hora(hora_prev, hora_real)
         self.resultado = resultado
-        
+
         Parada.curr_id += 1
         self.id = Parada.curr_id
         self.estado = "PENDIENTE"
 
-    def generar_comprobante(self, receptor, fecha):
+    def generar_comprobante(self, receptor, fecha, monto):
         if self.estado == "PENDIENTE":
             self.estado = "ENTREGADA"
-            self.comprobante = Comprobante(self.solicitud, fecha, receptor)
+            self.comprobante = Comprobante(self.solicitud, fecha, receptor, monto)
             return self.comprobante
         raise Exception(f"El estado de la parada ya es {self.estado}")
 
@@ -44,7 +44,3 @@ class Parada:
             raise TypeError("hora_prev y hora_real deben ser objetos datetime")
         else:
             return hora_prev, hora_real
-
-        
-    # @staticmethod
-    # def validar_hora(hora):     ???

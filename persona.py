@@ -36,19 +36,41 @@ class Administrador(Persona):
         super().__init__(nombre, dni, telefono)
         
 
-    def crear_viaje(self, transporte, deposito, horario):
-        viaje = Viaje(transporte, deposito, horario)
+    def crear_viaje(self, transporte, deposito, horario, matriz):
+        viaje = Viaje(transporte, deposito, horario, matriz)
         return viaje
 
 class Solicitante(Persona):
     def __init__(self, nombre, dni, telefono):
         super().__init__(nombre, dni, telefono)
 
-    def crear_solicitud(self, articulos, destino, ventana_inicio, ventana_fin):
-        solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
-        return solicitud
+    @staticmethod
+    def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, **articulos):
+        if viaje.estado != "PLANIFICADO":
+            raise ValueError(f"No se pueden agregar solicitudes a un viaje ya iniciado o terminado")
+        peso = viaje.peso_total
+        volumen = viaje.volumen_total
+        for articulo in articulos.values():
+            peso += articulo.getter_peso()
+            volumen += articulo.getter_volumen()
+        if peso > viaje.transporte.peso_max:
+            raise ValueError(f"El peso total de la solicitud ({peso}) excede el peso máximo del transporte ({viaje.transporte.peso_max})")
+        elif volumen > viaje.transporte.volumen:
+            raise ValueError(f"El volumen total de la solicitud ({volumen}) excede el volumen máximo del transporte ({viaje.transporte.volumen})")
+        articulos = list(articulos.values())
+        nueva_solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
+        if not viaje.validar_recorrido(viaje.solicitudes + [nueva_solicitud]):
+            raise ValueError(f"La solicitud no cumple con las ventanas horarias")
+        viaje.peso_total = peso
+        viaje.volumen_total = volumen
+        viaje.solicitudes.append(nueva_solicitud)
+        return nueva_solicitud
+
+
     
 # moto = Transporte("Moto", 100, 1)
 # juan=Administrador("Juan Perez", 12345678, 1234567890)
 # viaje = Administrador.crear_viaje(juan, moto, "Deposito1", datetime(2023, 6, 1, 10, 0, 0))
 # print(viaje.horario)
+        
+        
