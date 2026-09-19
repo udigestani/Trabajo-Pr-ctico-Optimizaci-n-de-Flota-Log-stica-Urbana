@@ -19,6 +19,7 @@ class Parada:
     def generar_comprobante(self, receptor, fecha, monto):
         if self.estado == "PENDIENTE":
             self.estado = "ENTREGADA"
+            self.hora_real = fecha
             self.comprobante = Comprobante(self.solicitud, fecha, receptor, monto)
             return self.comprobante
         raise Exception(f"El estado de la parada ya es {self.estado}")
@@ -40,7 +41,7 @@ class Parada:
 
     @staticmethod
     def validar_hora(hora_prev, hora_real):
-        if not isinstance(hora_prev, datetime) or not isinstance(hora_real, datetime):
+        if not isinstance(hora_prev, datetime) or not isinstance(hora_real, (datetime, type(None))):
             raise TypeError("hora_prev y hora_real deben ser objetos datetime")
         else:
             return hora_prev, hora_real

@@ -2,6 +2,7 @@ from incidente import Incidente
 from transporte import Transporte
 from datetime import datetime, timedelta
 from solicitud import Solicitud
+from parada import Parada
 
 class Viaje:
     curr_id = 0
@@ -18,6 +19,41 @@ class Viaje:
         self.incidentes = []
         Viaje.curr_id += 1
         self.id = Viaje.curr_id
+
+    def iniciar_viaje(self):
+        if self.estado != "PLANIFICADO":
+            raise ValueError(f"El estado del viaje es {self.estado}")
+        if not self.solicitudes:
+            raise ValueError("El viaje aún no tiene solicitudes")
+        
+        self.paradas = []
+        horario = self.horario
+        ubicacion = self.deposito
+        for i in range(len(self.solicitudes)):
+            solicitud = self.solicitudes[i]
+            lugar = solicitud.destino
+            distancia = self.matriz.obtener_distancia(ubicacion, lugar)
+            tiempo_hrs = distancia / self.transporte.velocidad
+            horario += timedelta(hours=tiempo_hrs)
+            if horario < solicitud.ventana_inicio:
+                horario = solicitud.ventana_inicio
+            nueva_parada = Parada(orden=i+1, solicitud=solicitud, hora_prev=horario, hora_real=None)
+            self.paradas.append(nueva_parada)
+        self.estado = "EN_CURSO"
+
+    def registrar_entrega(self, hora_real, receptor, monto):
+        if self.estado != "EN_CURSO":
+            raise ValueError(f"El viaje debe estar en curso para registrar una entrega")
+        registrado = False
+        for i in range(len(self.paradas)):
+            parada = self.paradas[i]
+            if parada.estado == "PENDIENTE" and registrado == False:
+                registrado = True
+                comprobante = parada.generar_comprobante(receptor, hora_real, monto)
+        if registrado == False:
+            raise ValueError("No quedan paradas pendientes")
+        return comprobante
+            
 
     def registrar_incidente(self, tipo, fecha, descripcion):
         incidente = Incidente(tipo, fecha, descripcion)
@@ -60,7 +96,7 @@ class Viaje:
 
     @staticmethod
     def validar_matriz(matriz): 
-        from matrizdistancia import MatrizDistancia
+        from matrizDistancia import MatrizDistancia
         if isinstance(matriz, MatrizDistancia):
             return matriz
         raise TypeError("La matriz debe ser un objeto de clase MatrizDistancia")
@@ -98,3 +134,13 @@ class Viaje:
         tiempo_hrs = distancia / self.transporte.velocidad
         llegada = horario + timedelta(hours=tiempo_hrs)
         return True
+
+    def distancia_total(self):
+        ubicacion = self.deposito
+        distancia = 0
+        for solicitud in self.solicitudes:
+            lugar = solicitud.destino
+            distancia += self.matriz.obtener_distancia(ubicacion, lugar)
+            ubicacion = lugar
+        distancia += self.matriz.obtener_distancia(ubicacion, self.deposito)
+        return distancia
