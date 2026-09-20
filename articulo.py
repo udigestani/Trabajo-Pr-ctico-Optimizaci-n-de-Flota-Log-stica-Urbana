@@ -28,6 +28,15 @@ class Articulo:
             raise ValueError(f"La descripcion {cadena} no debe estar vacia")
         raise TypeError(f"La descripcion {cadena} debe ser una cadena str")
 
+    def __str__(self):
+        return f"Artículo {self.id}: {self.descripcion} ({self.peso}kg, {self.volumen}m³)"
+    def __repr__(self):
+        return f"<Articulo {self.id} '{self.descripcion}'>"
+    def __eq__(self, otro):
+        if isinstance(otro, Articulo):
+            return self.id == otro.id
+        return False
+
 # art1 = Articulo("Producto", 1, 7)
 art1 = Articulo("Producto", 1, 7)
 art_2 = Articulo("Producto 2", 2, 5)

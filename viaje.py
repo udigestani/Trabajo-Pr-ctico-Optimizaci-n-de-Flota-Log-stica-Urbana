@@ -39,6 +39,8 @@ class Viaje:
                 horario = solicitud.ventana_inicio
             nueva_parada = Parada(orden=i+1, solicitud=solicitud, hora_prev=horario, hora_real=None)
             self.paradas.append(nueva_parada)
+            horario += timedelta(minutes=10)
+            ubicacion = lugar
         self.estado = "EN_CURSO"
 
     def registrar_entrega(self, hora_real, receptor, monto):
@@ -48,8 +50,10 @@ class Viaje:
         for i in range(len(self.paradas)):
             parada = self.paradas[i]
             if parada.estado == "PENDIENTE" and registrado == False:
-                registrado = True
+                registrado = i
                 comprobante = parada.generar_comprobante(receptor, hora_real, monto)
+        if registrado == len(self.paradas)-1:
+            self.finalizar_viaje()
         if registrado == False:
             raise ValueError("No quedan paradas pendientes")
         return comprobante
@@ -60,7 +64,10 @@ class Viaje:
         self.incidentes.append(incidente)
         return incidente
 
-    def agregar_solicitud(self, articulos, destino, ventana_inicio, ventana_fin):
+    def finalizar_viaje(self):
+        self.estado = "FINALIZADO"
+
+    def crear_solicitud(self, articulos, destino, ventana_inicio, ventana_fin):
         if self.estado != "PLANIFICADO":
             raise ValueError("No se pueden agregar solicitudes a un viaje ya iniciado o terminado")
         peso = self.peso_total
@@ -144,3 +151,37 @@ class Viaje:
             ubicacion = lugar
         distancia += self.matriz.obtener_distancia(ubicacion, self.deposito)
         return distancia
+    def getter_estado(self):
+        return self.estado
+    def getter_peso(self):
+        return self.peso_total
+    def getter_volumen(self):
+        return self.volumen_total
+    def getter_peso_max(self):
+        return self.transporte.getter_peso_max()
+    def getter_volumen_max(self):
+        return self.transporte.getter_volumen()
+    def getter_solicitudes(self):
+        return self.solicitudes.copy()
+    def setter_peso(self, peso):
+        self.peso_total = peso
+        return None
+    def setter_volumen(self, volumen):
+        self.volumen_total = volumen
+        return None
+    def agregar_solicitud(self, nueva_solicitud):
+        if not isinstance(nueva_solicitud, Solicitud):
+            raise TypeError(f"La solicitud {nueva_solicitud} es de type {type(nueva_solicitud)}")
+        self.solicitudes.append(nueva_solicitud)
+        return None
+    def __str__(self):
+        tipo_transporte = self.transporte.__class__.__name__
+        fecha = self.horario.strftime('%Y-%m-%d %H:%M')
+        return f"Viaje {self.id} [{self.estado}] - {tipo_transporte} saliendo de {self.deposito} a las {fecha}"
+    def __repr__(self):
+        return f"<Viaje {self.id} {self.estado} paradas={len(self.solicitudes)}>"
+        
+    def __eq__(self, otro):
+        if isinstance(otro, Viaje):
+            return self.id == otro.id
+        return False

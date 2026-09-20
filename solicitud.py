@@ -55,9 +55,19 @@ class Solicitud:
             raise ValueError("El inicio de la ventana debe ser anterior o igual al fin")
         else:
             return ventana_inicio, ventana_fin
+    def __str__(self):
+        return f"Solicitud {self.id} hacia {self.destino} (Ventana: {self.ventana_inicio.strftime('%H:%M')}-{self.ventana_fin.strftime('%H:%M')})"
 
+    def __repr__(self):
+        return f"<Solicitud {self.id} -> {self.destino}>"
 
+    def __eq__(self, otro):
+        if isinstance(otro, Solicitud):
+            return self.id == otro.id
+        return False
 
+    def getter_articulos(self):
+        return self.articulos
 
 
 # art1 = Articulo("Maquinaria", 200, 4)

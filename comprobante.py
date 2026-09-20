@@ -39,5 +39,8 @@ class Comprobante:
         if monto < 0:
             raise ValueError("El monto no puede ser negativo")
         return monto
+    def __str__(self):
+        fecha_str = self.fecha_Hora.strftime('%Y-%m-%d %H:%M')
+        return f"Comprobante {self.id} | Solicitud {self.solicitud.id} | Recibió: {self.receptor} el {fecha_str} | Monto: ${self.monto}"
 # comp1=Comprobante("solicitud1", datetime(2023, 6, 1, 10, 0), "Juan Perez", 1500)
 # print(comp1.id, comp1.solicitud, comp1.fecha_Hora, comp1.receptor, comp1.monto)

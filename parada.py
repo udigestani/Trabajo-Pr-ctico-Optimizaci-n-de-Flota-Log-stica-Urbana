@@ -45,3 +45,12 @@ class Parada:
             raise TypeError("hora_prev y hora_real deben ser objetos datetime")
         else:
             return hora_prev, hora_real
+
+    def __str__(self):
+        hora = self.hora_prev.strftime('%H:%M')
+        if self.hora_real:
+            hora = f"{self.hora_real.strftime('%H:%M')} (REAL)"
+        return f"Parada {self.orden} [{self.estado}] -> {self.solicitud.destino} a las {hora}"
+
+    def __repr__(self):
+        return f"<Parada {self.orden} {self.estado}>"

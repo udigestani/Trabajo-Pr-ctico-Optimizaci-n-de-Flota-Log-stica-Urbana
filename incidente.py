@@ -32,6 +32,8 @@ class Incidente:
         if not isinstance(fecha, datetime):
             raise TypeError("fecha debe ser un objeto datetime")
         return fecha
-
+    def __str__(self):
+        fecha_str = self.fecha.strftime('%H:%M')
+        return f"Incidente {self.id} [{self.tipo}] a las {fecha_str}: {self.descripcion}"
     # @staticmethod
     # def validar_fecha(fecha):          ?
