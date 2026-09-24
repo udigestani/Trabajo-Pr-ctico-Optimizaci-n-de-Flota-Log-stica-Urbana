@@ -47,6 +47,8 @@ class Viaje:
     def registrar_entrega(self, hora_real, receptor, monto):
         if self.estado != "EN_CURSO":
             raise EstadoInvalidoError("registrar_entrega", self.estado)
+        if hora_real < self.horario:
+            raise DatoInvalidoError("La hora de entrega no puede ser anterior al horario de salida del viaje")
         comprobante = None
         for parada in self.paradas:
             if parada.estado == "PENDIENTE":
@@ -61,6 +63,8 @@ class Viaje:
     def registrar_incidente(self, tipo, fecha, descripcion):
         if self.estado != "EN_CURSO":
             raise EstadoInvalidoError("registrar_incidente", self.estado)
+        if fecha < self.horario:
+            raise DatoInvalidoError("La fecha del incidente no puede ser anterior al horario de salida del viaje")
         incidente = None
         for parada in self.paradas:
             if parada.estado == "PENDIENTE":
@@ -82,7 +86,9 @@ class Viaje:
         if pendientes:
             raise ViajeIncompletoError(pendientes)
         self.estado = "FINALIZADO"
+        print(f"VIAJE FINALIZADO: {self.deposito}", [p for p in self.paradas], sep=", ")
 
+    # FIJARSE SI ES NECESARIA
     def crear_solicitud(self, articulos, destino, ventana_inicio, ventana_fin):
         if self.estado != "PLANIFICADO":
             raise EstadoInvalidoError("crear_solicitud", self.estado)
