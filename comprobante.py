@@ -1,3 +1,4 @@
+from excepciones import DatoInvalidoError
 from datetime import datetime
 
 
@@ -17,7 +18,7 @@ class Comprobante:
             raise TypeError(f"El receptor {receptor} debe ser una cadena str")
         if receptor and receptor.strip():
             return receptor
-        raise ValueError(f"El receptor no puede ser vacio")
+        raise DatoInvalidoError(f"El receptor no puede ser vacio")
 
     @staticmethod
     def validar_fecha_hora(fecha_hora):
@@ -37,7 +38,7 @@ class Comprobante:
         if not isinstance(monto, (int, float)):
             raise TypeError("El monto debe ser un número")
         if monto < 0:
-            raise ValueError("El monto no puede ser negativo")
+            raise DatoInvalidoError("El monto no puede ser negativo")
         return monto
     def __str__(self):
         fecha_str = self.fecha_Hora.strftime('%Y-%m-%d %H:%M')

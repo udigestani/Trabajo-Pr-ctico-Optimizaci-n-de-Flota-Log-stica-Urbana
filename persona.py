@@ -2,6 +2,7 @@ from viaje import Viaje
 from solicitud import Solicitud
 from datetime import datetime 
 from transporte import Transporte
+from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, DNIInvalidoError
 
 class Persona:
     dnis_registrados = {}
@@ -14,21 +15,21 @@ class Persona:
     def validar_dni(cls, dni):
         if isinstance(dni, int) and len(str(dni)) == 8:
             if dni in cls.dnis_registrados:
-                raise ValueError(f"El DNI {dni} ya está registrado")
+                raise DNIInvalidoError(f"El DNI {dni} ya está registrado")
             return dni
-        raise ValueError(f"El DNI {dni} debe ser un número entero de 8 dígitos")
+        raise DatoInvalidoError(f"El DNI {dni} debe ser un número entero de 8 dígitos")
 
     @staticmethod
     def validar_telefono(telefono):
         if isinstance(telefono, int) and len(str(telefono)) == 10:
             return telefono
-        raise ValueError(f"El teléfono {telefono} debe ser un número entero de 10 dígitos")
+        raise DatoInvalidoError(f"El teléfono {telefono} debe ser un número entero de 10 dígitos")
 
     @staticmethod
     def validar_nombre(nombre):
         if isinstance(nombre, str) and len(nombre) > 0:
             return nombre
-        raise ValueError(f"El nombre {nombre} debe ser una cadena de caracteres no vacía")
+        raise DatoInvalidoError(f"El nombre {nombre} debe ser una cadena de caracteres no vacía")
 
     def __str__(self):
         return f"Persona de nombre {self.nombre} y DNI: {self.dni}"
@@ -56,20 +57,19 @@ class Solicitante(Persona):
     def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, **articulos):
 
         if viaje.getter_estado() != "PLANIFICADO":
-            raise ValueError(f"No se pueden agregar solicitudes a un viaje ya iniciado o terminado")
+            raise EstadoInvalidoError("crear_solicitud", {viaje.getter_estado()})
         peso = viaje.getter_peso()
         volumen = viaje.getter_volumen()
         for articulo in articulos.values():
             peso += articulo.getter_peso()
             volumen += articulo.getter_volumen()
         if peso > viaje.getter_peso_max():
-            raise ValueError(f"El peso total de la solicitud ({peso}) excede el peso máximo del transporte ({viaje.getter_peso_max()})")
+            raise ExcesoPesoError(viaje.getter_peso_max(), peso)
         elif volumen > viaje.getter_volumen_max():
-            raise ValueError(f"El volumen total de la solicitud ({volumen}) excede el volumen máximo del transporte ({viaje.getter_volumen_max()})")
+            raise ExcesoVolumenError(viaje.getter_volumen_max(), volumen)
         articulos = list(articulos.values())
         nueva_solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
-        if not viaje.validar_recorrido(viaje.getter_solicitudes() + [nueva_solicitud]):
-            raise ValueError(f"La solicitud no cumple con las ventanas horarias")
+        viaje.validar_recorrido(viaje.getter_solicitudes() + [nueva_solicitud])  #VER SI FUNCIONA ASÍ
         viaje.setter_peso(peso)
         viaje.setter_volumen(volumen)
         viaje.agregar_solicitud(nueva_solicitud)

@@ -1,7 +1,7 @@
 from comprobante import Comprobante
 from articulo import Articulo
 from datetime import datetime
-
+from excepciones import DatoInvalidoError, VentanaInvalidaError
 
 class Solicitud:
     curr_id = 0
@@ -32,7 +32,7 @@ class Solicitud:
     def validar_ubicacion(ubicacion):
         if isinstance(ubicacion, str):
             if not ubicacion.strip():
-                raise ValueError(f"La ubicación debe ser no vacía")
+                raise DatoInvalidoError(f"La ubicación debe ser no vacía")
             return ubicacion
         raise TypeError(f"La ubicacion debe ser una cadena str")
 
@@ -40,7 +40,7 @@ class Solicitud:
     def validar_articulos(articulos):
         if isinstance(articulos, list): #creo que es isinstance(articulos, list):
             if len(articulos) == 0:
-                raise ValueError(f"La solicitud debe contener por lo menos un artículo")
+                raise DatoInvalidoError(f"La solicitud debe contener por lo menos un artículo")
             for articulo in articulos:
                 if not isinstance(articulo, Articulo):
                     raise TypeError(f"La lista de articulos {articulos} contiene un articulo {articulo} no válido")
@@ -52,7 +52,7 @@ class Solicitud:
         if not isinstance(ventana_inicio, datetime) or not isinstance(ventana_fin, datetime):
             raise TypeError("La ventana horaria debe estar compuesta por objetos datetime")
         if ventana_inicio > ventana_fin:
-            raise ValueError("El inicio de la ventana debe ser anterior o igual al fin")
+            raise VentanaInvalidaError(ventana_inicio, ventana_fin)
         else:
             return ventana_inicio, ventana_fin
     def __str__(self):

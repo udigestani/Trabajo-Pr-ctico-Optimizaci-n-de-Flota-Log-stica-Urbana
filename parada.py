@@ -1,3 +1,4 @@
+from excepciones import DatoInvalidoError, EstadoInvalidoError
 from comprobante import Comprobante
 from solicitud import Solicitud
 from datetime import datetime
@@ -22,7 +23,7 @@ class Parada:
             self.hora_real = fecha
             self.comprobante = Comprobante(self.solicitud, fecha, receptor, monto)
             return self.comprobante
-        raise Exception(f"El estado de la parada ya es {self.estado}")
+        raise EstadoInvalidoError("generar_comprobante", self.estado)
 
 
     @staticmethod
@@ -30,7 +31,7 @@ class Parada:
         if isinstance(valor, int):
             if valor > 0:
                 return valor
-            raise ValueError(f"El orden de la parada debe ser mayor a 0")
+            raise DatoInvalidoError(f"El orden de la parada debe ser mayor a 0")
         raise TypeError(f"El valor {valor} debe ser un entero positivo")
 
     @staticmethod

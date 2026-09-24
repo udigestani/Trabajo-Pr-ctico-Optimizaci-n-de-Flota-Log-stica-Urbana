@@ -1,3 +1,5 @@
+from excepciones import DatoInvalidoError
+
 class Articulo:
     curr_id = 0
     def __init__(self, descripcion, peso, volumen):
@@ -17,7 +19,7 @@ class Articulo:
         if isinstance(valor, (int, float)):
             if valor > 0:
                 return valor
-            raise ValueError(f"El valor {valor} debe ser mayor a 0")
+            raise DatoInvalidoError(f"El valor {valor} debe ser mayor a 0")
         raise TypeError(f"El valor {valor} debe ser un número positivo")
 
     @staticmethod
@@ -25,7 +27,7 @@ class Articulo:
         if isinstance(cadena, str):
             if cadena:
                 return cadena
-            raise ValueError(f"La descripcion {cadena} no debe estar vacia")
+            raise DatoInvalidoError(f"La descripcion {cadena} no debe estar vacia")
         raise TypeError(f"La descripcion {cadena} debe ser una cadena str")
 
     def __str__(self):

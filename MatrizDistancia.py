@@ -1,3 +1,5 @@
+from excepciones import DatoInvalidoError, RutaIncompletaError
+
 class MatrizDistancia:
     def __init__(self):
         self.distancias = {}
@@ -6,7 +8,7 @@ class MatrizDistancia:
         if not isinstance(km, (int, float)):
             raise TypeError(f"La distancia {km} debe ser un int o un float")
         if km < 0:
-            raise ValueError(f"La distancia {km} no puede ser negativa, solo nula o positiva")
+            raise DatoInvalidoError(f"La distancia {km} no puede ser negativa, solo nula o positiva")
         else:
             self.distancias[(id_origen, id_destino)] = km
 
@@ -20,6 +22,6 @@ class MatrizDistancia:
         if (id_origen, id_destino) in self.distancias:
             return self.distancias[(id_origen, id_destino)]
         else:
-            raise ValueError(f"No existe distancia registrada de {id_origen} a {id_destino}")
+            raise RutaIncompletaError(id_origen, id_destino)
 
     

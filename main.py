@@ -9,8 +9,7 @@ from viaje import Viaje
 from persona import Persona, Administrador, Solicitante
 from matrizDistancia import MatrizDistancia
 from datetime import datetime
-    
-        
+
 def main():
     admin = Administrador("Admin", 23456789, 1144444444)
     matriz = MatrizDistancia()
@@ -38,10 +37,7 @@ def main():
     viaje.iniciar_viaje()
     viaje.registrar_entrega(datetime(2024,6,1,9,0), "RECEPTOR", 100)
     viaje.registrar_entrega(datetime(2024,6,1,9,40), "RECEPTOR1", 120)
-
     
-
-
 
 # No cambiar a partir de aqui
 if __name__ == "__main__":

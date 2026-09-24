@@ -1,4 +1,4 @@
-
+from excepciones import DatoInvalidoError
 from datetime import datetime
 
 
@@ -16,7 +16,7 @@ class Incidente:
         if not isinstance(tipo, str):
             raise TypeError(f"El tipo del incidente debe ser DAÑO, AUSENTE o RETRASO")
         if tipo not in ("DANO", "AUSENTE", "RETRASO"):
-            raise ValueError(f"El tipo del incidente debe ser DAÑO, AUSENTE o RETRASO")
+            raise DatoInvalidoError(f"El tipo del incidente debe ser DAÑO, AUSENTE o RETRASO")
         return tipo
 
     @staticmethod
@@ -24,7 +24,7 @@ class Incidente:
         if isinstance(cadena, str):
             if cadena:
                 return cadena
-            raise ValueError(f"La descripcion {cadena} no debe estar vacia")
+            raise DatoInvalidoError(f"La descripcion {cadena} no debe estar vacia")
         raise TypeError(f"La descripcion {cadena} debe ser una cadena str")
 
     @staticmethod

@@ -3,6 +3,7 @@ from transporte import Transporte
 from datetime import datetime, timedelta
 from solicitud import Solicitud
 from parada import Parada
+from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError
 
 class Viaje:
     curr_id = 0
@@ -22,9 +23,9 @@ class Viaje:
 
     def iniciar_viaje(self):
         if self.estado != "PLANIFICADO":
-            raise ValueError(f"El estado del viaje es {self.estado}")
+            raise EstadoInvalidoError("iniciar_viaje", self.estado)
         if not self.solicitudes:
-            raise ValueError("El viaje aún no tiene solicitudes")
+            raise ViajeVacioError("Viaje Vacio: El viaje aún no tiene solicitudes")
         
         self.paradas = []
         horario = self.horario
@@ -45,18 +46,20 @@ class Viaje:
 
     def registrar_entrega(self, hora_real, receptor, monto):
         if self.estado != "EN_CURSO":
-            raise ValueError(f"El viaje debe estar en curso para registrar una entrega")
-        registrado = False
+            raise EstadoInvalidoError("registrar_entrega", self.estado)
+        registrado = -2
         for i in range(len(self.paradas)):
             parada = self.paradas[i]
-            if parada.estado == "PENDIENTE" and registrado == False:
+            if parada.estado == "PENDIENTE" and registrado == -2:
                 registrado = i
                 comprobante = parada.generar_comprobante(receptor, hora_real, monto)
         if registrado == len(self.paradas)-1:
             self.finalizar_viaje()
-        if registrado == False:
-            raise ValueError("No quedan paradas pendientes")
+        if registrado == -2:
+            raise ValueError("No quedan paradas pendientes")    #HABRIA QUE VER QUE EXCEPTION
         return comprobante
+    
+    
             
 
     def registrar_incidente(self, tipo, fecha, descripcion):
@@ -69,21 +72,19 @@ class Viaje:
 
     def crear_solicitud(self, articulos, destino, ventana_inicio, ventana_fin):
         if self.estado != "PLANIFICADO":
-            raise ValueError("No se pueden agregar solicitudes a un viaje ya iniciado o terminado")
+            raise EstadoInvalidoError("crear_solicitud", self.estado)
         peso = self.peso_total
         volumen = self.volumen_total
         for articulo in articulos:
             peso += articulo.getter_peso()
             volumen += articulo.getter_volumen()
         if peso > self.transporte.peso_max:
-            raise ValueError(f"El peso total de la solicitud ({peso}) excede el peso máximo del transporte ({self.transporte.peso_max})")
+            raise ExcesoPesoError(self.transporte.peso_max, peso)
         elif volumen > self.transporte.volumen:
-            raise ValueError(f"El volumen total de la solicitud ({volumen}) excede el volumen máximo del transporte ({self.transporte.volumen})")
+            raise ExcesoVolumenError(self.transporte.volumen, volumen)
 
         nueva_solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
-        if not self.validar_recorrido(self.solicitudes + [nueva_solicitud]):
-            raise ValueError("La solicitud no cumple con las ventanas horarias")
-
+        self.validar_recorrido(self.solicitudes + [nueva_solicitud])  #VER SI FUNCIONA ASÍ
         self.peso_total = peso
         self.volumen_total = volumen
         self.solicitudes.append(nueva_solicitud)
@@ -99,7 +100,7 @@ class Viaje:
     def validar_deposito(deposito):
         if isinstance(deposito, str) and deposito.strip():
             return deposito
-        raise TypeError("El depósito debe ser una cadena str no vacía")
+        raise DatoInvalidoError("El depósito debe ser una cadena str no vacía")
 
     @staticmethod
     def validar_matriz(matriz): 
@@ -110,10 +111,8 @@ class Viaje:
 
     @staticmethod
     def validar_estado(estado):
-        if not isinstance(estado, str):
-            raise TypeError("El estado del viaje debe ser PLANIFICADO, EN_CURSO o FINALIZADO")
         if estado not in ("PLANIFICADO", "EN_CURSO", "FINALIZADO"):
-            raise ValueError("El estado del viaje debe ser PLANIFICADO, EN_CURSO o FINALIZADO")
+            raise DatoInvalidoError("El estado del viaje debe ser PLANIFICADO, EN_CURSO o FINALIZADO")
         return estado
 
     @staticmethod
@@ -132,7 +131,7 @@ class Viaje:
             tiempo_hrs = distancia / self.transporte.velocidad
             llegada = horario + timedelta(hours=tiempo_hrs)
             if llegada > solicitud.ventana_fin:
-                return False
+                raise VentanaIncumplidaError(lugar, llegada, solicitud.ventana_fin)
             if llegada < solicitud.ventana_inicio:
                 llegada = solicitud.ventana_inicio
             horario = llegada + timedelta(minutes=10)
