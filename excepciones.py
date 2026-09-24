@@ -24,3 +24,12 @@ class VentanaInvalidaError(Exception):
         super().__init__(f"El inicio de la ventana ({inicio}) debe ser anterior al fin ({fin})")
 class ViajeVacioError(Exception):
     pass
+class SinParadasPendientesError(Exception):
+    def __init__(self, accion):
+        super().__init__(f"Sin paradas pendientes: No se puede {accion} porque todas las paradas ya tienen resultado")
+class ViajeIncompletoError(Exception):
+    def __init__(self, pendientes):
+        super().__init__(f"Viaje incompleto: No se puede finalizar porque quedan {pendientes} paradas pendientes")
+class SolicitudDuplicadaError(Exception):
+    def __init__(self, solicitud_id):
+        super().__init__(f"Solicitud duplicada: La solicitud {solicitud_id} ya pertenece a un viaje planificado o en curso")

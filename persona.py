@@ -15,7 +15,7 @@ class Persona:
     def validar_dni(cls, dni):
         if isinstance(dni, int) and len(str(dni)) == 8:
             if dni in cls.dnis_registrados:
-                raise DNIInvalidoError(f"El DNI {dni} ya está registrado")
+                raise DNIInvalidoError(dni)
             return dni
         raise DatoInvalidoError(f"El DNI {dni} debe ser un número entero de 8 dígitos")
 
@@ -57,7 +57,7 @@ class Solicitante(Persona):
     def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, **articulos):
 
         if viaje.getter_estado() != "PLANIFICADO":
-            raise EstadoInvalidoError("crear_solicitud", {viaje.getter_estado()})
+            raise EstadoInvalidoError("crear_solicitud", viaje.getter_estado())
         peso = viaje.getter_peso()
         volumen = viaje.getter_volumen()
         for articulo in articulos.values():
