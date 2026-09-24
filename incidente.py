@@ -43,5 +43,7 @@ class Incidente:
     def __str__(self):
         fecha_str = self.fecha.strftime('%H:%M')
         return f"Incidente {self.id} [{self.tipo}] a las {fecha_str}: {self.descripcion}"
+    def __repr__(self):
+        return f"Incidente({self.tipo}, {self.fecha}, {self.descripcion}, {self.afectado})"
     # @staticmethod
     # def validar_fecha(fecha):          ?

@@ -11,7 +11,8 @@ from matrizDistancia import MatrizDistancia
 from datetime import datetime
 
 def main():
-    admin = Administrador("Admin", 23456789, 1144444444)
+    juan = Administrador("Juan", 23456789, 1144444444)
+    
     matriz = MatrizDistancia()
     matriz.cargar_matriz([
         ("Deposito", "Destino S1", 15),
@@ -26,17 +27,26 @@ def main():
         ("Destino S3", "Destino S1", 8),
         ("Destino S2", "Destino S3", 12),
         ("Destino S3", "Destino S2", 12)])
+    print(matriz.distancias)
+    
     camion = Camion()
-    viaje = admin.crear_viaje(camion, "Deposito", datetime(2024,6,1,8,0), matriz)
+    viaje = juan.crear_viaje(camion, "Deposito", datetime(2024,6,1,8,0), matriz)
 
     articulos = [Articulo(f"Producto {i}", i, 0.3*i) for i in range(1, 11)]
+
     solic = Solicitante("Solicitante", 22222222, 1199988887)
+
     solic.crear_solicitud(viaje, "Destino S1", datetime(2024,6,1,9,0) , datetime(2024,6,1,9,15), art_1 = articulos[0], art_2 = articulos[1], art_3 = articulos[2], art_4 = articulos[3], art_5 = articulos[4])
     solic.crear_solicitud(viaje, "Destino S2", datetime(2024,6,1,9,30) , datetime(2024,6,1,9,45), art_1 = articulos[5], art_2 = articulos[6], art_3 = articulos[7], art_4 = articulos[8], art_5 = articulos[9])
     print(camion.calcular_impacto_ambiental(viaje.distancia_total(),viaje.peso_total))
     viaje.iniciar_viaje()
     viaje.registrar_entrega(datetime(2024,6,1,9,0), "RECEPTOR", 100)
-    viaje.registrar_entrega(datetime(2024,6,1,9,40), "RECEPTOR1", 120)
+    # viaje.registrar_entrega(datetime(2024,6,1,9,40), "RECEPTOR1", 120)
+    print(viaje.registrar_incidente ("DAÑO", datetime(2024,6,1,9,0), "Pinchamos goma pa"))
+    print(viaje.incidentes)
+
+    
+
     
 
 # No cambiar a partir de aqui
