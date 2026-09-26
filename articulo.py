@@ -40,6 +40,6 @@ class Articulo:
         return False
 
 # art1 = Articulo("Producto", 1, 7)
-art1 = Articulo("Producto", 1, 7)
-art_2 = Articulo("Producto 2", 2, 5)
-articulos = [Articulo(f"Producto {i}", i, i*2) for i in range(1, 11)]
+# art1 = Articulo("Producto", 1, 7)
+# art_2 = Articulo("Producto 2", 2, 5)
+# articulos = [Articulo(f"Producto {i}", i, i*2) for i in range(1, 11)]

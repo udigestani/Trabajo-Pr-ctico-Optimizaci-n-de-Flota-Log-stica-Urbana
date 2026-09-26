@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from solicitud import Solicitud
 from parada import Parada
 from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError
+from functools import reduce
 
 class Viaje:
     curr_id = 0
@@ -49,13 +50,10 @@ class Viaje:
             raise EstadoInvalidoError("registrar_entrega", self.estado)
         if hora_real < self.horario:
             raise DatoInvalidoError("La hora de entrega no puede ser anterior al horario de salida del viaje")
-        comprobante = None
-        for parada in self.paradas:
-            if parada.estado == "PENDIENTE":
-                comprobante = parada.generar_comprobante(receptor, hora_real, monto)
-                break
-        if comprobante is None:
+        parada_pendiente = next(filter(lambda p: p.estado == "PENDIENTE", self.paradas), None)
+        if parada_pendiente is None:
             raise SinParadasPendientesError("registrar_entrega")
+        comprobante = parada_pendiente.generar_comprobante(receptor, hora_real, monto)
         if all(p.estado != "PENDIENTE" for p in self.paradas):
             self.finalizar_viaje()
         return comprobante
@@ -65,16 +63,13 @@ class Viaje:
             raise EstadoInvalidoError("registrar_incidente", self.estado)
         if fecha < self.horario:
             raise DatoInvalidoError("La fecha del incidente no puede ser anterior al horario de salida del viaje")
-        incidente = None
-        for parada in self.paradas:
-            if parada.estado == "PENDIENTE":
-                parada.estado = "FALLIDA"
-                parada.hora_real = fecha
-                incidente = Incidente(tipo, fecha, descripcion, parada.solicitud)
-                self.incidentes.append(incidente)
-                break
-        if incidente is None:
+        parada_pendiente = next(filter(lambda p: p.estado == "PENDIENTE", self.paradas), None)
+        if parada_pendiente is None:
             raise SinParadasPendientesError("registrar_incidente")
+        parada_pendiente.estado = "FALLIDA"
+        parada_pendiente.hora_real = fecha
+        incidente = Incidente(tipo, fecha, descripcion, parada_pendiente.solicitud)
+        self.incidentes.append(incidente)
         if all(p.estado != "PENDIENTE" for p in self.paradas):
             self.finalizar_viaje()
         return incidente
@@ -92,11 +87,8 @@ class Viaje:
     def crear_solicitud(self, articulos, destino, ventana_inicio, ventana_fin):
         if self.estado != "PLANIFICADO":
             raise EstadoInvalidoError("crear_solicitud", self.estado)
-        peso = self.peso_total
-        volumen = self.volumen_total
-        for articulo in articulos:
-            peso += articulo.getter_peso()
-            volumen += articulo.getter_volumen()
+        peso = self.peso_total + reduce(lambda x, y: x + y, map(lambda a: a.getter_peso(), articulos), 0)
+        volumen = self.volumen_total + reduce(lambda x, y: x + y, map(lambda a: a.getter_volumen(), articulos), 0)
         if peso > self.transporte.peso_max:
             raise ExcesoPesoError(self.transporte.peso_max, peso)
         elif volumen > self.transporte.volumen:
@@ -193,7 +185,8 @@ class Viaje:
             raise TypeError(f"La solicitud {nueva_solicitud} es de type {type(nueva_solicitud)}")
         if self.estado != "PLANIFICADO":
             raise EstadoInvalidoError("agregar_solicitud", self.estado)
-        if nueva_solicitud.viaje is not None and nueva_solicitud.viaje.estado in ("PLANIFICADO", "EN_CURSO"):
+        viaje_anterior = nueva_solicitud.viaje
+        if viaje_anterior is not None and (viaje_anterior.estado in ("PLANIFICADO", "EN_CURSO") or nueva_solicitud.comprobante is not None):
             raise SolicitudDuplicadaError(nueva_solicitud.id)
         self.solicitudes.append(nueva_solicitud)
         nueva_solicitud.viaje = self

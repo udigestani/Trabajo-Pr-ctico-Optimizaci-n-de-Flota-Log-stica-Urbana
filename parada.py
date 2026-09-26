@@ -22,6 +22,7 @@ class Parada:
             self.estado = "ENTREGADA"
             self.hora_real = fecha
             self.comprobante = Comprobante(self.solicitud, fecha, receptor, monto)
+            self.solicitud.comprobante = self.comprobante
             return self.comprobante
         raise EstadoInvalidoError("generar_comprobante", self.estado)
 

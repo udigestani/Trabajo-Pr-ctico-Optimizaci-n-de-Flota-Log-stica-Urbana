@@ -3,6 +3,7 @@ from solicitud import Solicitud
 from datetime import datetime 
 from transporte import Transporte
 from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, DNIInvalidoError
+from functools import reduce
 
 class Persona:
     dnis_registrados = {}
@@ -13,21 +14,21 @@ class Persona:
         Persona.dnis_registrados[self.dni] = self
     @classmethod
     def validar_dni(cls, dni):
-        if isinstance(dni, int) and len(str(dni)) == 8:
+        if isinstance(dni, int) and len(str(dni)) == 8 and dni > 0:
             if dni in cls.dnis_registrados:
                 raise DNIInvalidoError(dni)
             return dni
-        raise DatoInvalidoError(f"El DNI {dni} debe ser un número entero de 8 dígitos")
+        raise DatoInvalidoError(f"El DNI {dni} debe ser un número entero positivo de 8 dígitos")
 
     @staticmethod
     def validar_telefono(telefono):
-        if isinstance(telefono, int) and len(str(telefono)) == 10:
+        if isinstance(telefono, int) and len(str(telefono)) == 10 and telefono > 0:
             return telefono
-        raise DatoInvalidoError(f"El teléfono {telefono} debe ser un número entero de 10 dígitos")
+        raise DatoInvalidoError(f"El teléfono {telefono} debe ser un número entero positivo de 10 dígitos")
 
     @staticmethod
     def validar_nombre(nombre):
-        if isinstance(nombre, str) and len(nombre) > 0:
+        if isinstance(nombre, str) and len(nombre.strip()) > 0:
             return nombre
         raise DatoInvalidoError(f"El nombre {nombre} debe ser una cadena de caracteres no vacía")
 
@@ -55,14 +56,12 @@ class Solicitante(Persona):
 
     @staticmethod
     def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, **articulos):
-
+        if not isinstance(viaje, Viaje):
+            raise DatoInvalidoError(f"El viaje debe ser un objeto de clase Viaje")
         if viaje.getter_estado() != "PLANIFICADO":
             raise EstadoInvalidoError("crear_solicitud", viaje.getter_estado())
-        peso = viaje.getter_peso()
-        volumen = viaje.getter_volumen()
-        for articulo in articulos.values():
-            peso += articulo.getter_peso()
-            volumen += articulo.getter_volumen()
+        peso = viaje.getter_peso() + reduce(lambda x, y: x + y, map(lambda a: a.getter_peso(), articulos.values()), 0)
+        volumen = viaje.getter_volumen() + reduce(lambda x, y: x + y, map(lambda a: a.getter_volumen(), articulos.values()), 0)
         if peso > viaje.getter_peso_max():
             raise ExcesoPesoError(viaje.getter_peso_max(), peso)
         elif volumen > viaje.getter_volumen_max():
