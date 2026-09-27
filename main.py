@@ -7,7 +7,7 @@ from solicitud import Solicitud
 from transporte import Transporte, Camion, Motocicleta, Furgoneta
 from viaje import Viaje
 from persona import Persona, Administrador, Solicitante
-from matrizDistancia import MatrizDistancia
+from matrizdistancia import MatrizDistancia
 from datetime import datetime
 
 def main():

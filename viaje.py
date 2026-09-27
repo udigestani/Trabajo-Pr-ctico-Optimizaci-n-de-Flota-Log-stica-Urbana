@@ -116,7 +116,7 @@ class Viaje:
 
     @staticmethod
     def validar_matriz(matriz): 
-        from matrizDistancia import MatrizDistancia
+        from matrizdistancia import MatrizDistancia
         if isinstance(matriz, MatrizDistancia):
             return matriz
         raise TypeError("La matriz debe ser un objeto de clase MatrizDistancia")

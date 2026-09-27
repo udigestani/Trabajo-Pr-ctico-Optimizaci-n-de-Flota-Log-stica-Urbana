@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from matrizDistancia import MatrizDistancia
+from matrizdistancia import MatrizDistancia
 from viaje import Viaje
 from transporte import Furgoneta, Camion
 from articulo import Articulo
@@ -127,7 +127,7 @@ def test_registro_de_incidente(viaje_base):
 
 
 def test_politicas_de_ordenamiento_no_alteran_estado(viaje_base, matriz_base):
-    from politicaOrdenamiento import Vecinos, VentanasTiempo
+    from politicaordenamiento import Vecinos, VentanasTiempo
     
     s1 = Solicitud([Articulo("A", 10, 1)], "Destino B", datetime(2024, 6, 1, 11, 0), datetime(2024, 6, 1, 12, 0))
     s2 = Solicitud([Articulo("B", 10, 1)], "Destino A", datetime(2024, 6, 1, 9, 0), datetime(2024, 6, 1, 10, 0))

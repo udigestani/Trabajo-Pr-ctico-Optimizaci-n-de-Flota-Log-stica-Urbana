@@ -3,7 +3,7 @@ from viaje import Viaje
 from datetime import datetime, timedelta
 from solicitud import Solicitud
 from articulo import Articulo
-from matrizDistancia import MatrizDistancia
+from matrizdistancia import MatrizDistancia
 from transporte import Furgoneta, Camion, Transporte
 from excepciones import ExcesoPesoError, ExcesoVolumenError, VentanaIncumplidaError, EstadoInvalidoError, DatoInvalidoError, ViajeIncompletoError, ViajeVacioError, SinParadasPendientesError, SolicitudDuplicadaError
 
