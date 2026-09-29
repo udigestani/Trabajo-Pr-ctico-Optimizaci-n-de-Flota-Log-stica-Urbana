@@ -187,13 +187,7 @@ def test_metodos_magicos(viaje_con_solicitudes, transporte_base, matriz_base):
     assert str(viaje_con_solicitudes) == f"Viaje {viaje_con_solicitudes.id} [PLANIFICADO] - Furgoneta saliendo de Deposito a las 2024-06-01 09:00"
     assert repr(viaje_con_solicitudes) == f"<Viaje {viaje_con_solicitudes.id} PLANIFICADO paradas=2>"
 
-
-#  Estos tests daban Failed y se arreglaron
-
 def test_solicitud_reutilizada(viaje_con_solicitudes, transporte_base, matriz_base):
-    # GAP: agregar_solicitud sólo bloquea reutilizar una solicitud si su viaje anterior
-    # está PLANIFICADO o EN_CURSO. Una solicitud de un viaje ya FINALIZADO se puede colar
-    # en un segundo viaje sin ningún control, dejando estado inconsistente.
     viaje_con_solicitudes.iniciar_viaje()
     solicitud_a, solicitud_b = viaje_con_solicitudes.getter_solicitudes()
     viaje_con_solicitudes.registrar_entrega(datetime(2024, 6, 1, 9, 35), "Juan Perez", 1500)
@@ -203,9 +197,3 @@ def test_solicitud_reutilizada(viaje_con_solicitudes, transporte_base, matriz_ba
     otro_viaje = Viaje(transporte_base, "Deposito", datetime(2024, 6, 1, 9, 0), matriz_base)
     with pytest.raises(SolicitudDuplicadaError):
         otro_viaje.agregar_solicitud(solicitud_a)
-
-# def test_viaje_no_es_hasheable_pero_deberia_serlo(viaje_base):
-#     # GAP: Viaje define __eq__ pero no __hash__, así que Python lo vuelve unhashable
-#     # automáticamente. No se puede guardar en un set ni usar como clave de diccionario.
-#     viajes = {viaje_base}
-#     assert viaje_base in viajes
