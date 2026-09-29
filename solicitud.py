@@ -14,21 +14,9 @@ class Solicitud:
         Solicitud.curr_id += 1
         self.id = Solicitud.curr_id
 
-    def generar_comprobante(self,fecha_Hora, receptor, monto):
+    def generar_comprobante(self, fecha_Hora, receptor, monto):
         self.comprobante = Comprobante(self, fecha_Hora, receptor, monto)
         return self.comprobante
-                  
-    # def calcular_peso(self):
-    #     total = 0
-    #     for articulo in self.articulos:
-    #         total += articulo.getter_peso()
-    #     return total
-
-    # def calcular_volumen(self):
-    #     total = 0
-    #     for articulo in self.articulos:
-    #         total += articulo.getter_volumen()
-    #     return total
     
     @staticmethod
     def validar_ubicacion(ubicacion):
@@ -70,15 +58,3 @@ class Solicitud:
 
     def getter_articulos(self):
         return self.articulos
-
-
-# art1 = Articulo("Maquinaria", 200, 4)
-# art2 = Articulo("Maquinaria", 150, 3.5)
-
-
-# solicitud = Solicitud([art1,art2,art2,art1,art2], ubi1, datetime(2023, 6, 1, 10, 0), datetime(2023, 6, 1, 13, 0))
-# print(solicitud.calcular_peso(), solicitud.calcular_volumen())
-# solicitud1 = Solicitud([art2], datetime(2023, 6, 1, 10, 0), datetime(2023, 6, 1, 12, 0))
-# print(solicitud1.calcular_peso(), solicitud1.calcular_volumen())
-# solicitud.generar_comprobante(datetime(2023, 6, 1, 10, 0), "Juan Perez", 1500)
-# print(solicitud.comprobante.id, solicitud.comprobante.fecha_Hora, solicitud.comprobante.receptor, solicitud.comprobante.monto)
