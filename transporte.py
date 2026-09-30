@@ -1,6 +1,5 @@
 class Transporte:
     curr_id = 0
-    # aca tenemos que ver como lo hacmos. lo que estoy pensando es que la velocidad, el costo de viaje y el factor hambiental son cosas que dependen de que se uso para el viaje. Todas esas cosas se caclulan dependiendo el tipo de auto qeu usamos. Entonces tendrian que empezar como cero? y dsp las cambiamos? o directamente no se pasan como parametros?    
     def __init__(self, peso_max, volumen, velocidad, costo_km, costo_parada, factor_ambiental):
         self.peso_max = peso_max
         self.costo_km = costo_km
@@ -14,11 +13,12 @@ class Transporte:
 
     def calcular_impacto_ambiental(self, distancia, peso):
         return self.factor_ambiental * distancia
+    
     def getter_peso_max(self):
         return self.peso_max
+    
     def getter_volumen(self):
         return self.volumen
-    # No se necesitan validaciones acá no? Porque ya todos los números están sacados de los hijos
 
     def __str__(self):
         return f"{self.__class__.__name__} {self.id} (Max: {self.peso_max}kg, {self.volumen}m³)"

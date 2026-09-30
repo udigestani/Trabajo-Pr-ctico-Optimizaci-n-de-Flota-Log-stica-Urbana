@@ -14,7 +14,7 @@ class Persona:
         Persona.dnis_registrados[self.dni] = self
     @classmethod
     def validar_dni(cls, dni):
-        if isinstance(dni, int) and len(str(dni)) == 8 and dni > 0:
+        if isinstance(dni, int) and (len(str(dni)) == 8 or len(str(dni)) == 7) and dni > 0:
             if dni in cls.dnis_registrados:
                 raise DNIInvalidoError(dni)
             return dni
@@ -73,10 +73,3 @@ class Solicitante(Persona):
         viaje.setter_volumen(volumen)
         viaje.agregar_solicitud(nueva_solicitud)
         return nueva_solicitud
-
-# moto = Transporte("Moto", 100, 1)
-# juan=Administrador("Juan Perez", 12345678, 1234567890)
-# viaje = Administrador.crear_viaje(juan, moto, "Deposito1", datetime(2023, 6, 1, 10, 0, 0))
-# print(viaje.horario)
-        
-        
