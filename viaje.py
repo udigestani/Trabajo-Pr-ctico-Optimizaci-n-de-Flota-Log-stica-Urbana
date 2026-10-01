@@ -23,7 +23,6 @@ class Viaje:
         self.id = Viaje.curr_id
 
 
-    # FIJARSE SI ES NECESARIA
     def crear_solicitud(self, articulos, destino, ventana_inicio, ventana_fin):
         if self.estado != "PLANIFICADO":
             raise EstadoInvalidoError("crear_solicitud", self.estado)

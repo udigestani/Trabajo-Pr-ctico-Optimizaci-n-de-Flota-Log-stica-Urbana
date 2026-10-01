@@ -12,6 +12,7 @@ class Persona:
         self.dni = self.validar_dni(dni)
         self.telefono = self.validar_telefono(telefono)
         Persona.dnis_registrados[self.dni] = self
+
     @classmethod
     def validar_dni(cls, dni):
         if isinstance(dni, int) and (len(str(dni)) == 8 or len(str(dni)) == 7) and dni > 0:
@@ -60,15 +61,18 @@ class Solicitante(Persona):
             raise DatoInvalidoError(f"El viaje debe ser un objeto de clase Viaje")
         if viaje.getter_estado() != "PLANIFICADO":
             raise EstadoInvalidoError("crear_solicitud", viaje.getter_estado())
+        
         peso = viaje.getter_peso() + reduce(lambda x, y: x + y, map(lambda a: a.getter_peso(), articulos.values()), 0)
         volumen = viaje.getter_volumen() + reduce(lambda x, y: x + y, map(lambda a: a.getter_volumen(), articulos.values()), 0)
+        
         if peso > viaje.getter_peso_max():
             raise ExcesoPesoError(viaje.getter_peso_max(), peso)
         elif volumen > viaje.getter_volumen_max():
             raise ExcesoVolumenError(viaje.getter_volumen_max(), volumen)
+        
         articulos = list(articulos.values())
         nueva_solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
-        viaje.validar_recorrido(viaje.getter_solicitudes() + [nueva_solicitud])  #VER SI FUNCIONA ASÍ
+        viaje.validar_recorrido(viaje.getter_solicitudes() + [nueva_solicitud]) 
         viaje.setter_peso(peso)
         viaje.setter_volumen(volumen)
         viaje.agregar_solicitud(nueva_solicitud)
