@@ -25,7 +25,7 @@ class Articulo:
     @staticmethod
     def validar_descripcion(cadena):
         if isinstance(cadena, str):
-            if cadena:
+            if cadena.strip():
                 return cadena
             raise DatoInvalidoError(f"La descripcion {cadena} no debe estar vacia")
         raise TypeError(f"La descripcion {cadena} debe ser una cadena str")
