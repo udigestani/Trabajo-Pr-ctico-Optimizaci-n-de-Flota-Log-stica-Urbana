@@ -53,9 +53,9 @@ def test_dni_no_entero():
         Persona("Juan Perez", "12345678", 1123456789)
     assert Persona.dnis_registrados == {}
 def test_dni_largo_invalido():
-    with pytest.raises(DatoInvalidoError, match="El DNI 1234567 debe ser un número entero positivo de 8 dígitos"):
-        Persona("Juan Perez", 1234567, 1123456789)
-    assert 1234567 not in Persona.dnis_registrados
+    with pytest.raises(DatoInvalidoError, match="El DNI 123456789 debe ser un número entero positivo de 8 dígitos"):
+        Persona("Juan Perez", 123456789, 1123456789)
+    assert 123456789 not in Persona.dnis_registrados
 def test_telefono_largo_invalido():
     with pytest.raises(DatoInvalidoError, match="El teléfono 12345 debe ser un número entero positivo de 10 dígitos"):
         Persona("Juan Perez", 12345678, 12345)
