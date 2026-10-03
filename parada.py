@@ -22,7 +22,7 @@ class Parada:
             self.estado = "ENTREGADA"
             self.hora_real = fecha
             self.comprobante = Comprobante(self.solicitud, fecha, receptor, monto)
-            self.solicitud.comprobante = self.comprobante
+            self.solicitud.setter_comprobante(self.comprobante)
             return self.comprobante
         raise EstadoInvalidoError("generar_comprobante", self.estado)
 
@@ -52,7 +52,24 @@ class Parada:
         hora = self.hora_prev.strftime('%H:%M')
         if self.hora_real:
             hora = f"{self.hora_real.strftime('%H:%M')} (REAL)"
-        return f"Parada {self.orden} [{self.estado}] -> {self.solicitud.destino} a las {hora}"
+        return f"Parada {self.orden} [{self.estado}] -> {self.solicitud.getter_destino()} a las {hora}"
 
     def __repr__(self):
         return f"<Parada {self.orden} {self.estado}>"
+
+    def getter_estado(self):
+        return self.estado
+    def setter_estado(self, estado):
+        self.estado = estado
+        return None
+    def setter_hora_real(self, hora_real):
+        self.hora_real = hora_real
+        return None
+    def getter_solicitud(self):
+        return self.solicitud
+    def getter_orden(self):
+        return self.orden
+    def getter_hora_prev(self):
+        return self.hora_prev
+    def getter_hora_real(self):
+        return self.hora_real

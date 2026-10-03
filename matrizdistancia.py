@@ -24,4 +24,6 @@ class MatrizDistancia:
         else:
             raise RutaIncompletaError(id_origen, id_destino)
 
+    def getter_distancias(self):
+        return self.distancias.copy()
     

@@ -40,6 +40,13 @@ class Comprobante:
         if monto < 0:
             raise DatoInvalidoError("El monto no puede ser negativo")
         return monto
+    def getter_solicitud(self):
+        return self.solicitud
+    def getter_receptor(self):
+        return self.receptor
+    def getter_monto(self):
+        return self.monto
+
     def __str__(self):
         fecha_str = self.fecha_Hora.strftime('%Y-%m-%d %H:%M')
-        return f"Comprobante {self.id} | Solicitud {self.solicitud.id} | Recibió: {self.receptor} el {fecha_str} | Monto: ${self.monto}"
+        return f"Comprobante {self.id} | Solicitud {self.solicitud.getter_id()} | Recibió: {self.receptor} el {fecha_str} | Monto: ${self.monto}"

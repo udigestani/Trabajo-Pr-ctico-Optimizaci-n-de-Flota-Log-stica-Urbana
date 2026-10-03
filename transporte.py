@@ -20,6 +20,12 @@ class Transporte:
     def getter_volumen(self):
         return self.volumen
 
+    def getter_velocidad(self):
+        return self.velocidad
+
+    def getter_tipo(self):
+        return self.__class__.__name__
+
     def __str__(self):
         return f"{self.__class__.__name__} {self.id} (Max: {self.peso_max}kg, {self.volumen}m³)"
     def __repr__(self):

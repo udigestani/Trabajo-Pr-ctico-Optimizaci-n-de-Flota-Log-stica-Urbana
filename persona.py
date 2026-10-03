@@ -33,6 +33,21 @@ class Persona:
             return nombre
         raise DatoInvalidoError(f"El nombre {nombre} debe ser una cadena de caracteres no vacía")
 
+    def getter_nombre(self):
+        return self.nombre
+    def getter_dni(self):
+        return self.dni
+    def getter_telefono(self):
+        return self.telefono
+
+    @classmethod
+    def getter_dnis_registrados(cls):
+        return cls.dnis_registrados.copy()
+    @classmethod
+    def limpiar_dnis_registrados(cls):
+        cls.dnis_registrados.clear()
+        return None
+
     def __str__(self):
         return f"Persona de nombre {self.nombre} y DNI: {self.dni}"
     def __repr__(self):
@@ -40,7 +55,7 @@ class Persona:
     def __eq__(self, other):
         if not isinstance(other, Persona):
             return False
-        return self.dni == other.dni
+        return self.dni == other.getter_dni()
 
 class Administrador(Persona):
     def __init__(self, nombre, dni, telefono):

@@ -40,6 +40,11 @@ class Incidente:
         if not isinstance(afectado, Solicitud):
             raise TypeError("El incidente debe referenciar a una Solicitud")
         return afectado
+    def getter_tipo(self):
+        return self.tipo
+    def getter_afectado(self):
+        return self.afectado
+
     def __str__(self):
         fecha_str = self.fecha.strftime('%H:%M')
         return f"Incidente {self.id} [{self.tipo}] a las {fecha_str}: {self.descripcion}"

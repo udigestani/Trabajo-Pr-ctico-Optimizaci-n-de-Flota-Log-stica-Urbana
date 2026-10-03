@@ -11,14 +11,14 @@ class Vecinos(PoliticaOrdenamiento):
         while pendientes:
             siguiente = min(
                 pendientes,
-                key=lambda s: matriz.obtener_distancia(actual, s.destino)
+                key=lambda s: matriz.obtener_distancia(actual, s.getter_destino())
             )
             orden.append(siguiente)
-            actual = siguiente.destino
+            actual = siguiente.getter_destino()
             pendientes.remove(siguiente)
         return orden
 
 
 class VentanasTiempo(PoliticaOrdenamiento):
     def sugerir_orden(self, deposito, solicitudes, matriz):
-        return sorted(solicitudes, key=lambda s: s.ventana_inicio)
+        return sorted(solicitudes, key=lambda s: s.getter_ventana_inicio())

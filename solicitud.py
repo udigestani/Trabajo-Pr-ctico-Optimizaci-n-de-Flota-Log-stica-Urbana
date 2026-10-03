@@ -53,8 +53,26 @@ class Solicitud:
 
     def __eq__(self, otro):
         if isinstance(otro, Solicitud):
-            return self.id == otro.id
+            return self.id == otro.getter_id()
         return False
 
     def getter_articulos(self):
         return self.articulos
+    def getter_id(self):
+        return self.id
+    def getter_destino(self):
+        return self.destino
+    def getter_ventana_inicio(self):
+        return self.ventana_inicio
+    def getter_ventana_fin(self):
+        return self.ventana_fin
+    def getter_viaje(self):
+        return self.viaje
+    def setter_viaje(self, viaje):
+        self.viaje = viaje
+        return None
+    def getter_comprobante(self):
+        return self.comprobante
+    def setter_comprobante(self, comprobante):
+        self.comprobante = comprobante
+        return None

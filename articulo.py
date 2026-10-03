@@ -13,6 +13,8 @@ class Articulo:
         return self.peso
     def getter_volumen(self):
         return self.volumen
+    def getter_id(self):
+        return self.id
 
     @staticmethod
     def validar_numero(valor):
@@ -36,5 +38,5 @@ class Articulo:
         return f"<Articulo {self.id} '{self.descripcion}'>"
     def __eq__(self, otro):
         if isinstance(otro, Articulo):
-            return self.id == otro.id
+            return self.id == otro.getter_id()
         return False

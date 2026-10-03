@@ -28,17 +28,17 @@ class Viaje:
             raise EstadoInvalidoError("crear_solicitud", self.estado)
         peso = self.peso_total + reduce(lambda x, y: x + y, map(lambda a: a.getter_peso(), articulos), 0)
         volumen = self.volumen_total + reduce(lambda x, y: x + y, map(lambda a: a.getter_volumen(), articulos), 0)
-        if peso > self.transporte.peso_max:
-            raise ExcesoPesoError(self.transporte.peso_max, peso)
-        elif volumen > self.transporte.volumen:
-            raise ExcesoVolumenError(self.transporte.volumen, volumen)
+        if peso > self.transporte.getter_peso_max():
+            raise ExcesoPesoError(self.transporte.getter_peso_max(), peso)
+        elif volumen > self.transporte.getter_volumen():
+            raise ExcesoVolumenError(self.transporte.getter_volumen(), volumen)
 
         nueva_solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
         self.validar_recorrido(self.solicitudes + [nueva_solicitud])  #VER SI FUNCIONA ASÍ
         self.peso_total = peso
         self.volumen_total = volumen
         self.solicitudes.append(nueva_solicitud)
-        nueva_solicitud.viaje = self
+        nueva_solicitud.setter_viaje(self)
         return nueva_solicitud
 
     @staticmethod
@@ -77,18 +77,18 @@ class Viaje:
         horario = self.horario
         ubicacion = self.deposito
         for solicitud in recorrido_nuevo:
-            lugar = solicitud.destino
+            lugar = solicitud.getter_destino()
             distancia = self.matriz.obtener_distancia(ubicacion, lugar)
-            tiempo_hrs = distancia / self.transporte.velocidad
+            tiempo_hrs = distancia / self.transporte.getter_velocidad()
             llegada = horario + timedelta(hours=tiempo_hrs)
-            if llegada > solicitud.ventana_fin:
-                raise VentanaIncumplidaError(lugar, llegada, solicitud.ventana_fin)
-            if llegada < solicitud.ventana_inicio:
-                llegada = solicitud.ventana_inicio
+            if llegada > solicitud.getter_ventana_fin():
+                raise VentanaIncumplidaError(lugar, llegada, solicitud.getter_ventana_fin())
+            if llegada < solicitud.getter_ventana_inicio():
+                llegada = solicitud.getter_ventana_inicio()
             horario = llegada + timedelta(minutes=10)
             ubicacion = lugar
         distancia = self.matriz.obtener_distancia(ubicacion, self.deposito)
-        tiempo_hrs = distancia / self.transporte.velocidad
+        tiempo_hrs = distancia / self.transporte.getter_velocidad()
         llegada = horario + timedelta(hours=tiempo_hrs)
         return True
 
@@ -96,7 +96,7 @@ class Viaje:
         ubicacion = self.deposito
         distancia = 0
         for solicitud in self.solicitudes:
-            lugar = solicitud.destino
+            lugar = solicitud.getter_destino()
             distancia += self.matriz.obtener_distancia(ubicacion, lugar)
             ubicacion = lugar
         distancia += self.matriz.obtener_distancia(ubicacion, self.deposito)
@@ -113,6 +113,17 @@ class Viaje:
         return self.transporte.getter_volumen()
     def getter_solicitudes(self):
         return self.solicitudes.copy()
+    def getter_id(self):
+        return self.id
+    def getter_transporte(self):
+        return self.transporte
+    def getter_incidentes(self):
+        return self.incidentes.copy()
+    def getter_paradas(self):
+        return self.paradas.copy()
+    def setter_estado(self, estado):
+        self.estado = self.validar_estado(estado)
+        return None
     def setter_peso(self, peso):
         self.peso_total = peso
         return None
@@ -126,14 +137,14 @@ class Viaje:
             raise TypeError(f"La solicitud {nueva_solicitud} es de type {type(nueva_solicitud)}")
         if self.estado != "PLANIFICADO":
             raise EstadoInvalidoError("agregar_solicitud", self.estado)
-        viaje_anterior = nueva_solicitud.viaje
-        if viaje_anterior is not None and (viaje_anterior.estado in ("PLANIFICADO", "EN_CURSO") or nueva_solicitud.comprobante is not None):
-            raise SolicitudDuplicadaError(nueva_solicitud.id)
+        viaje_anterior = nueva_solicitud.getter_viaje()
+        if viaje_anterior is not None and (viaje_anterior.getter_estado() in ("PLANIFICADO", "EN_CURSO") or nueva_solicitud.getter_comprobante() is not None):
+            raise SolicitudDuplicadaError(nueva_solicitud.getter_id())
         self.solicitudes.append(nueva_solicitud)
-        nueva_solicitud.viaje = self
+        nueva_solicitud.setter_viaje(self)
         return None
     def __str__(self):
-        tipo_transporte = self.transporte.__class__.__name__
+        tipo_transporte = self.transporte.getter_tipo()
         fecha = self.horario.strftime('%Y-%m-%d %H:%M')
         return f"Viaje {self.id} [{self.estado}] - {tipo_transporte} saliendo de {self.deposito} a las {fecha}"
     def __repr__(self):
@@ -141,7 +152,7 @@ class Viaje:
         
     def __eq__(self, otro):
         if isinstance(otro, Viaje):
-            return self.id == otro.id
+            return self.id == otro.getter_id()
         return False
 
     # DESDE ACÁ EL VIAJE ESTÁ INICIADO
@@ -156,12 +167,12 @@ class Viaje:
         ubicacion = self.deposito
         for i in range(len(self.solicitudes)):
             solicitud = self.solicitudes[i]
-            lugar = solicitud.destino
+            lugar = solicitud.getter_destino()
             distancia = self.matriz.obtener_distancia(ubicacion, lugar)
-            tiempo_hrs = distancia / self.transporte.velocidad
+            tiempo_hrs = distancia / self.transporte.getter_velocidad()
             horario += timedelta(hours=tiempo_hrs)
-            if horario < solicitud.ventana_inicio:
-                horario = solicitud.ventana_inicio
+            if horario < solicitud.getter_ventana_inicio():
+                horario = solicitud.getter_ventana_inicio()
             nueva_parada = Parada(orden=i+1, solicitud=solicitud, hora_prev=horario, hora_real=None)
             self.paradas.append(nueva_parada)
             horario += timedelta(minutes=10)
@@ -173,11 +184,11 @@ class Viaje:
             raise EstadoInvalidoError("registrar_entrega", self.estado)
         if hora_real < self.horario:
             raise DatoInvalidoError("La hora de entrega no puede ser anterior al horario de salida del viaje")
-        parada_pendiente = next(filter(lambda p: p.estado == "PENDIENTE", self.paradas), None)
+        parada_pendiente = next(filter(lambda p: p.getter_estado() == "PENDIENTE", self.paradas), None)
         if parada_pendiente is None:
             raise SinParadasPendientesError("registrar_entrega")
         comprobante = parada_pendiente.generar_comprobante(receptor, hora_real, monto)
-        if all(p.estado != "PENDIENTE" for p in self.paradas):
+        if all(map(lambda par: par.getter_estado() != "PENDIENTE", self.paradas)):
             self.finalizar_viaje()
         return comprobante
 
@@ -186,22 +197,22 @@ class Viaje:
             raise EstadoInvalidoError("registrar_incidente", self.estado)
         if fecha < self.horario:
             raise DatoInvalidoError("La fecha del incidente no puede ser anterior al horario de salida del viaje")
-        parada_pendiente = next(filter(lambda p: p.estado == "PENDIENTE", self.paradas), None)
+        parada_pendiente = next(filter(lambda p: p.getter_estado() == "PENDIENTE", self.paradas), None)
         if parada_pendiente is None:
             raise SinParadasPendientesError("registrar_incidente")
-        parada_pendiente.estado = "FALLIDA"
-        parada_pendiente.hora_real = fecha
-        incidente = Incidente(tipo, fecha, descripcion, parada_pendiente.solicitud)
+        parada_pendiente.setter_estado("FALLIDA")
+        parada_pendiente.setter_hora_real(fecha)
+        incidente = Incidente(tipo, fecha, descripcion, parada_pendiente.getter_solicitud())
         self.incidentes.append(incidente)
-        if all(p.estado != "PENDIENTE" for p in self.paradas):
+        if all(map(lambda par: par.getter_estado() != "PENDIENTE", self.paradas)):
             self.finalizar_viaje()
         return incidente
 
     def finalizar_viaje(self):
         if self.estado != "EN_CURSO":
             raise EstadoInvalidoError("finalizar_viaje", self.estado)
-        pendientes = sum(1 for p in self.paradas if p.estado == "PENDIENTE")
+        pendientes = len(list(filter(lambda par: par.getter_estado() == "PENDIENTE", self.paradas)))
         if pendientes:
             raise ViajeIncompletoError(pendientes)
         self.estado = "FINALIZADO"
-        print(f"VIAJE FINALIZADO: {self.deposito}", [p for p in self.paradas], sep=", ")
+        print(f"VIAJE FINALIZADO: {self.deposito}", self.paradas, sep=", ")

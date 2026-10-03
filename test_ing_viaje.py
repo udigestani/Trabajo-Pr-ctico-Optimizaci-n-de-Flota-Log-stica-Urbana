@@ -36,25 +36,25 @@ def viaje_base(matriz_base, transporte_base):
 
 #  ESTOS TESTS SON TODOS LOS DEL ESTADO INVÁLIDO EN DISTINTAS FUNCIONES
 def test_estado_invalido_crear_solicitud(viaje_base):
-    viaje_base.estado = "FINALIZADO"
+    viaje_base.setter_estado("FINALIZADO")
     with pytest.raises(EstadoInvalidoError, match="Estado invalido: No se puede crear_solicitud porque el estado es FINALIZADO"):
         viaje_base.crear_solicitud([Articulo("Producto", 10, 1)], "Destino A", datetime(2024, 6, 1, 9, 0), datetime(2024, 6, 1, 12, 0))
 def test_estado_invalido_iniciar_viaje(viaje_base):
     viaje_base.crear_solicitud([Articulo("Producto", 10, 1)], "Destino A", datetime(2024, 6, 1, 9, 0), datetime(2024, 6, 1, 12, 0))
     with pytest.raises(EstadoInvalidoError, match="Estado invalido: No se puede iniciar_viaje porque el estado es EN_CURSO"):
-        viaje_base.estado = "EN_CURSO"
+        viaje_base.setter_estado("EN_CURSO")
         viaje_base.iniciar_viaje()
 def test_estado_invalido_registrar_entrega(viaje_base):
     with pytest.raises(EstadoInvalidoError, match="Estado invalido: No se puede registrar_entrega porque el estado es FINALIZADO"):
-        viaje_base.estado = "FINALIZADO"
+        viaje_base.setter_estado("FINALIZADO")
         viaje_base.registrar_entrega(datetime(2024, 6, 1, 10, 0), "RECEPTOR", 100)
 def test_estado_invalido_registrar_incidente(viaje_base):
     with pytest.raises(EstadoInvalidoError, match="Estado invalido: No se puede registrar_incidente porque el estado es PLANIFICADO"):
-        viaje_base.estado = "PLANIFICADO"
+        viaje_base.setter_estado("PLANIFICADO")
         viaje_base.registrar_incidente("DAÑO", datetime(2024, 6, 1, 10, 0), "Pinchazo")
 def test_estado_invalido_finalizar_viaje(viaje_base):
     with pytest.raises(EstadoInvalidoError, match="Estado invalido: No se puede finalizar_viaje porque el estado es PLANIFICADO"):
-        viaje_base.estado = "PLANIFICADO"
+        viaje_base.setter_estado("PLANIFICADO")
         viaje_base.finalizar_viaje()
 
 
@@ -86,7 +86,7 @@ def test_entrega_hora_anterior_a_salida(viaje_base):
 def test_sin_paradas_pendientes(viaje_base):
     viaje_base.crear_solicitud([Articulo("Producto", 10, 1)], "Destino A", datetime(2024, 6, 1, 9, 0), datetime(2024, 6, 1, 12, 0))
     viaje_base.iniciar_viaje()
-    viaje_base.paradas[0].estado = "ENTREGADA"
+    viaje_base.getter_paradas()[0].setter_estado("ENTREGADA")
     with pytest.raises(SinParadasPendientesError, match="Sin paradas pendientes: No se puede registrar_entrega"):
         viaje_base.registrar_entrega(datetime(2024, 6, 1, 10, 0), "RECEPTOR", 100)
 def test_viaje_incompleto(viaje_base):
@@ -117,18 +117,18 @@ def test_viaje_recien_creado(viaje_base, transporte_base):
     assert viaje_base.getter_peso() == 0
     assert viaje_base.getter_volumen() == 0
     assert viaje_base.getter_solicitudes() == []
-    assert viaje_base.incidentes == []
+    assert viaje_base.getter_incidentes() == []
     assert viaje_base.getter_peso_max() == 500
     assert viaje_base.getter_volumen_max() == 8
-    assert viaje_base.transporte is transporte_base
+    assert viaje_base.getter_transporte() is transporte_base
 
 def test_crear_solicitud_acumula_carga(viaje_con_solicitudes):
     solicitudes = viaje_con_solicitudes.getter_solicitudes()
     assert len(solicitudes) == 2
     assert viaje_con_solicitudes.getter_peso() == 350
     assert viaje_con_solicitudes.getter_volumen() == 6
-    assert [s.destino for s in solicitudes] == ["Destino A", "Destino B"]
-    assert all(s.viaje is viaje_con_solicitudes for s in solicitudes)
+    assert list(map(lambda s: s.getter_destino(), solicitudes)) == ["Destino A", "Destino B"]
+    assert all(map(lambda s: s.getter_viaje() is viaje_con_solicitudes, solicitudes))
     # getter_solicitudes devuelve una copia: modificarla no afecta al viaje
     solicitudes.clear()
     assert len(viaje_con_solicitudes.getter_solicitudes()) == 2
@@ -148,33 +148,33 @@ def test_distancia_total(viaje_con_solicitudes):
 
 def test_iniciar_viaje_genera_paradas(viaje_con_solicitudes):
     viaje_con_solicitudes.iniciar_viaje()
-    paradas = viaje_con_solicitudes.paradas
+    paradas = viaje_con_solicitudes.getter_paradas()
     assert viaje_con_solicitudes.getter_estado() == "EN_CURSO"
     assert len(paradas) == 2
-    assert [p.orden for p in paradas] == [1, 2]
-    assert all(p.estado == "PENDIENTE" and p.hora_real is None for p in paradas)
+    assert list(map(lambda p: p.getter_orden(), paradas)) == [1, 2]
+    assert all(map(lambda p: p.getter_estado() == "PENDIENTE" and p.getter_hora_real() is None, paradas))
     # 15 km a 30 km/h = 30 min -> llega 9:30
-    assert paradas[0].hora_prev == datetime(2024, 6, 1, 9, 30)
+    assert paradas[0].getter_hora_prev() == datetime(2024, 6, 1, 9, 30)
     # 9:30 + 10 min de parada + 20 min de viaje = 10:00, pero la ventana abre 10:30
-    assert paradas[1].hora_prev == datetime(2024, 6, 1, 10, 30)
+    assert paradas[1].getter_hora_prev() == datetime(2024, 6, 1, 10, 30)
 
 def test_recorrido_completo_con_entrega_e_incidente(viaje_con_solicitudes):
     viaje_con_solicitudes.iniciar_viaje()
     solicitud_a, solicitud_b = viaje_con_solicitudes.getter_solicitudes()
 
     comprobante = viaje_con_solicitudes.registrar_entrega(datetime(2024, 6, 1, 9, 35), "Juan Perez", 1500)
-    assert comprobante.solicitud is solicitud_a
-    assert comprobante.receptor == "Juan Perez"
-    assert comprobante.monto == 1500
-    assert viaje_con_solicitudes.paradas[0].estado == "ENTREGADA"
-    assert viaje_con_solicitudes.paradas[0].hora_real == datetime(2024, 6, 1, 9, 35)
+    assert comprobante.getter_solicitud() is solicitud_a
+    assert comprobante.getter_receptor() == "Juan Perez"
+    assert comprobante.getter_monto() == 1500
+    assert viaje_con_solicitudes.getter_paradas()[0].getter_estado() == "ENTREGADA"
+    assert viaje_con_solicitudes.getter_paradas()[0].getter_hora_real() == datetime(2024, 6, 1, 9, 35)
     assert viaje_con_solicitudes.getter_estado() == "EN_CURSO"
 
     incidente = viaje_con_solicitudes.registrar_incidente("AUSENTE", datetime(2024, 6, 1, 10, 40), "No había nadie")
-    assert incidente.afectado is solicitud_b
-    assert incidente.tipo == "AUSENTE"
-    assert viaje_con_solicitudes.incidentes == [incidente]
-    assert viaje_con_solicitudes.paradas[1].estado == "FALLIDA"
+    assert incidente.getter_afectado() is solicitud_b
+    assert incidente.getter_tipo() == "AUSENTE"
+    assert viaje_con_solicitudes.getter_incidentes() == [incidente]
+    assert viaje_con_solicitudes.getter_paradas()[1].getter_estado() == "FALLIDA"
     # Al no quedar paradas pendientes el viaje se finaliza solo
     assert viaje_con_solicitudes.getter_estado() == "FINALIZADO"
 
@@ -183,9 +183,9 @@ def test_metodos_magicos(viaje_con_solicitudes, transporte_base, matriz_base):
     assert viaje_con_solicitudes == viaje_con_solicitudes
     assert viaje_con_solicitudes != otro
     assert viaje_con_solicitudes != "no soy un viaje"
-    assert otro.id == viaje_con_solicitudes.id + 1
-    assert str(viaje_con_solicitudes) == f"Viaje {viaje_con_solicitudes.id} [PLANIFICADO] - Furgoneta saliendo de Deposito a las 2024-06-01 09:00"
-    assert repr(viaje_con_solicitudes) == f"<Viaje {viaje_con_solicitudes.id} PLANIFICADO paradas=2>"
+    assert otro.getter_id() == viaje_con_solicitudes.getter_id() + 1
+    assert str(viaje_con_solicitudes) == f"Viaje {viaje_con_solicitudes.getter_id()} [PLANIFICADO] - Furgoneta saliendo de Deposito a las 2024-06-01 09:00"
+    assert repr(viaje_con_solicitudes) == f"<Viaje {viaje_con_solicitudes.getter_id()} PLANIFICADO paradas=2>"
 
 def test_solicitud_reutilizada(viaje_con_solicitudes, transporte_base, matriz_base):
     viaje_con_solicitudes.iniciar_viaje()
