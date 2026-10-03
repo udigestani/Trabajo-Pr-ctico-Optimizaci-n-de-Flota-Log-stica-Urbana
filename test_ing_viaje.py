@@ -86,7 +86,8 @@ def test_entrega_hora_anterior_a_salida(viaje_base):
 def test_sin_paradas_pendientes(viaje_base):
     viaje_base.crear_solicitud([Articulo("Producto", 10, 1)], "Destino A", datetime(2024, 6, 1, 9, 0), datetime(2024, 6, 1, 12, 0))
     viaje_base.iniciar_viaje()
-    viaje_base.getter_paradas()[0].setter_estado("ENTREGADA")
+    viaje_base.registrar_entrega(datetime(2024, 6, 1, 9, 35), "RECEPTOR", 100)
+    viaje_base.setter_estado("EN_CURSO")
     with pytest.raises(SinParadasPendientesError, match="Sin paradas pendientes: No se puede registrar_entrega"):
         viaje_base.registrar_entrega(datetime(2024, 6, 1, 10, 0), "RECEPTOR", 100)
 def test_viaje_incompleto(viaje_base):
