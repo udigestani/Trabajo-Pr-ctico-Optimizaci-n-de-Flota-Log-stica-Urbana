@@ -19,10 +19,10 @@ class Parada:
 
     def generar_comprobante(self, receptor, fecha, monto):
         if self.estado == "PENDIENTE":
-            self.estado = "ENTREGADA"
-            self.hora_real = fecha
             self.comprobante = Comprobante(self.solicitud, fecha, receptor, monto)
             self.solicitud.setter_comprobante(self.comprobante)
+            self.hora_real = fecha
+            self.estado = "ENTREGADA"
             return self.comprobante
         raise EstadoInvalidoError("generar_comprobante", self.estado)
 
