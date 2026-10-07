@@ -183,7 +183,7 @@ def test_incidente_con_detalles_kwargs(viaje_con_solicitudes):
     viaje_con_solicitudes.iniciar_viaje()
     incidente = viaje_con_solicitudes.registrar_incidente("DAÑO", datetime(2024, 6, 1, 9, 40), "Pinchazo", rueda="delantera", costo=15000)
     assert incidente.getter_detalles() == {"rueda": "delantera", "costo": 15000}
-    assert str(incidente) == f"Incidente {incidente.id} [DAÑO] a las 09:40: Pinchazo (rueda=delantera, costo=15000)"
+    assert str(incidente) == f"Incidente {incidente.id} [DAÑO] a las 09:40: Pinchazo, rueda=delantera, costo=15000"
     incidente.getter_detalles()["rueda"] = "otra"
     assert incidente.getter_detalles()["rueda"] == "delantera"
 
