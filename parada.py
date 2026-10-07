@@ -7,11 +7,10 @@ class Parada:
     curr_id = 0
     id_comprobante = 0
 
-    def __init__(self, orden, solicitud, hora_prev, hora_real, resultado = "PENDIENTE"):
+    def __init__(self, orden, solicitud, hora_prev, hora_real):
         self.orden = self.validar_orden(orden)
         self.solicitud = self.validar_solicitud(solicitud)
         self.hora_prev, self.hora_real = self.validar_hora(hora_prev, hora_real)
-        self.resultado = resultado
 
         Parada.curr_id += 1
         self.id = Parada.curr_id
@@ -29,7 +28,7 @@ class Parada:
 
     @staticmethod
     def validar_orden(valor):
-        if isinstance(valor, int):
+        if isinstance(valor, int) and not isinstance(valor, bool):
             if valor > 0:
                 return valor
             raise DatoInvalidoError(f"El orden de la parada debe ser mayor a 0")
@@ -60,6 +59,8 @@ class Parada:
     def getter_estado(self):
         return self.estado
     def setter_estado(self, estado):
+        if not isinstance(estado, str) or estado not in ("FALLIDA", "ENTREGADA"):
+            raise DatoInvalidoError(f"Estado inválido: La parada no puede pasar a estar {estado}")
         self.estado = estado
         return None
     def setter_hora_real(self, hora_real):

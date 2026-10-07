@@ -1,11 +1,11 @@
 from comprobante import Comprobante
 from articulo import Articulo
 from datetime import datetime
-from excepciones import DatoInvalidoError, VentanaInvalidaError
+from excepciones import DatoInvalidoError, VentanaInvalidaError, EstadoInvalidoError
 
 class Solicitud:
     curr_id = 0
-    def __init__(self, articulos, destino, ventana_inicio, ventana_fin):
+    def __init__(self, destino, ventana_inicio, ventana_fin, *articulos):
         self.articulos = self.validar_articulos(articulos)
         self.destino = self.validar_ubicacion(destino)
         self.ventana_inicio, self.ventana_fin = self.validar_ventana_horaria(ventana_inicio, ventana_fin) # hice esta validacion y cambie que los parametroz sea ventana_inicio y ventana_fin, asumiendo que entran 2 parametros y no como una tupla de ultima lo cambiamos dsp tipo antes habia ventana horaria, entonces deberia ser tipo ventana_horaria = (ventana_inicio, ventana_fin), pero queda mas prolijo asi
@@ -15,6 +15,8 @@ class Solicitud:
         self.id = Solicitud.curr_id
 
     def generar_comprobante(self, fecha_Hora, receptor, monto):
+        if self.comprobante:
+            raise EstadoInvalidoError("generar_comprobante", "ya tiene comprobante")
         self.comprobante = Comprobante(self, fecha_Hora, receptor, monto)
         return self.comprobante
     
@@ -28,14 +30,14 @@ class Solicitud:
 
     @staticmethod
     def validar_articulos(articulos):
-        if isinstance(articulos, list): #creo que es isinstance(articulos, list):
+        if isinstance(articulos, tuple):
             if len(articulos) == 0:
                 raise DatoInvalidoError(f"La solicitud debe contener por lo menos un artículo")
             for articulo in articulos:
                 if not isinstance(articulo, Articulo):
                     raise TypeError(f"La lista de articulos {articulos} contiene un articulo {articulo} no válido")
             return articulos
-        raise TypeError(f"La lista de articulos {articulos} debe ser una lista")
+        raise TypeError(f"Los articulos {articulos} deben ser una tupla")
 
     @staticmethod
     def validar_ventana_horaria(ventana_inicio, ventana_fin):
@@ -55,6 +57,8 @@ class Solicitud:
         if isinstance(otro, Solicitud):
             return self.id == otro.getter_id()
         return False
+    def __hash__(self):
+        return hash(self.id)
 
     def getter_articulos(self):
         return self.articulos

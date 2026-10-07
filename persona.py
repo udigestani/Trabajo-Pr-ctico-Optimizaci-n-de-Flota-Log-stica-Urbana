@@ -3,7 +3,6 @@ from solicitud import Solicitud
 from datetime import datetime 
 from transporte import Transporte
 from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, DNIInvalidoError
-from functools import reduce
 
 class Persona:
     dnis_registrados = {}
@@ -56,6 +55,8 @@ class Persona:
         if not isinstance(other, Persona):
             return False
         return self.dni == other.getter_dni()
+    def __hash__(self):
+        return hash(self.dni)    
 
 class Administrador(Persona):
     def __init__(self, nombre, dni, telefono):
@@ -71,24 +72,7 @@ class Solicitante(Persona):
         super().__init__(nombre, dni, telefono)
 
     @staticmethod
-    def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, **articulos):
+    def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, *articulos):
         if not isinstance(viaje, Viaje):
             raise DatoInvalidoError(f"El viaje debe ser un objeto de clase Viaje")
-        if viaje.getter_estado() != "PLANIFICADO":
-            raise EstadoInvalidoError("crear_solicitud", viaje.getter_estado())
-        
-        peso = viaje.getter_peso() + reduce(lambda x, y: x + y, map(lambda a: a.getter_peso(), articulos.values()), 0)
-        volumen = viaje.getter_volumen() + reduce(lambda x, y: x + y, map(lambda a: a.getter_volumen(), articulos.values()), 0)
-        
-        if peso > viaje.getter_peso_max():
-            raise ExcesoPesoError(viaje.getter_peso_max(), peso)
-        elif volumen > viaje.getter_volumen_max():
-            raise ExcesoVolumenError(viaje.getter_volumen_max(), volumen)
-        
-        articulos = list(articulos.values())
-        nueva_solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
-        viaje.validar_recorrido(viaje.getter_solicitudes() + [nueva_solicitud]) 
-        viaje.setter_peso(peso)
-        viaje.setter_volumen(volumen)
-        viaje.agregar_solicitud(nueva_solicitud)
-        return nueva_solicitud
+        return viaje.crear_solicitud(destino, ventana_inicio, ventana_fin, *articulos)

@@ -1,6 +1,6 @@
 from excepciones import DatoInvalidoError
 from datetime import datetime
-
+from math import isfinite
 
 class Comprobante:
     curr_id = 0
@@ -35,8 +35,10 @@ class Comprobante:
     
     @staticmethod
     def validar_monto(monto):
-        if not isinstance(monto, (int, float)):
+        if not isinstance(monto, (int, float)) or isinstance(monto, bool):
             raise TypeError("El monto debe ser un número")
+        elif not isfinite(monto):
+            raise DatoInvalidoError("El monto debe ser un número finito")
         if monto < 0:
             raise DatoInvalidoError("El monto no puede ser negativo")
         return monto

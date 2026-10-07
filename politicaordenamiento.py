@@ -4,7 +4,8 @@ class PoliticaOrdenamiento:
 
 
 class Vecinos(PoliticaOrdenamiento):
-    def sugerir_orden(self, deposito, solicitudes, matriz):
+    @staticmethod
+    def sugerir_orden(deposito, solicitudes, matriz):
         pendientes = list(solicitudes)
         orden = []
         actual = deposito
@@ -20,5 +21,6 @@ class Vecinos(PoliticaOrdenamiento):
 
 
 class VentanasTiempo(PoliticaOrdenamiento):
-    def sugerir_orden(self, deposito, solicitudes, matriz):
+    @staticmethod
+    def sugerir_orden(deposito, solicitudes, matriz):
         return sorted(solicitudes, key=lambda s: s.getter_ventana_inicio())

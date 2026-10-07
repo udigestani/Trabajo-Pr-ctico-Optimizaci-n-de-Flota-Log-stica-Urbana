@@ -1,4 +1,5 @@
 from excepciones import DatoInvalidoError
+from math import isfinite
 
 class Articulo:
     curr_id = 0
@@ -18,10 +19,10 @@ class Articulo:
 
     @staticmethod
     def validar_numero(valor):
-        if isinstance(valor, (int, float)):
-            if valor > 0:
+        if isinstance(valor, (int, float)) and not isinstance(valor, bool):
+            if isfinite(valor) and valor > 0:
                 return valor
-            raise DatoInvalidoError(f"El valor {valor} debe ser mayor a 0")
+            raise DatoInvalidoError(f"El valor {valor} debe ser finito y mayor a 0")
         raise TypeError(f"El valor {valor} debe ser un número positivo")
 
     @staticmethod
@@ -40,3 +41,5 @@ class Articulo:
         if isinstance(otro, Articulo):
             return self.id == otro.getter_id()
         return False
+    def __hash__(self):
+        return hash(self.id)

@@ -23,6 +23,7 @@ def test_persona_valida(persona_base):
     assert persona_base.getter_dni() == 12345678
     assert persona_base.getter_telefono() == 1123456789
     assert Persona.getter_dnis_registrados()[12345678] is persona_base
+    assert hash(persona_base) == 12345678
 def test_subclases_registran_dni():
     admin = Administrador("Ana Gomez", 23456789, 1134567890)
     solicitante = Solicitante("Luis Diaz", 34567890, 1145678901)

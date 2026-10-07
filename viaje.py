@@ -4,8 +4,11 @@ from datetime import datetime, timedelta
 from solicitud import Solicitud
 from parada import Parada
 from cola import Cola
-from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError
+from politicaordenamiento import Vecinos, VentanasTiempo
+from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, RutaIncompletaError, TransicionIlegalError
 from functools import reduce
+from itertools import chain
+from math import isfinite
 
 class Viaje:
     curr_id = 0
@@ -26,22 +29,11 @@ class Viaje:
         self.id = Viaje.curr_id
 
 
-    def crear_solicitud(self, articulos, destino, ventana_inicio, ventana_fin):
+    def crear_solicitud(self, destino, ventana_inicio, ventana_fin, *articulos):
         if self.estado != "PLANIFICADO":
             raise EstadoInvalidoError("crear_solicitud", self.estado)
-        peso = self.peso_total + reduce(lambda x, y: x + y, map(lambda a: a.getter_peso(), articulos), 0)
-        volumen = self.volumen_total + reduce(lambda x, y: x + y, map(lambda a: a.getter_volumen(), articulos), 0)
-        if peso > self.transporte.getter_peso_max():
-            raise ExcesoPesoError(self.transporte.getter_peso_max(), peso)
-        elif volumen > self.transporte.getter_volumen():
-            raise ExcesoVolumenError(self.transporte.getter_volumen(), volumen)
-
-        nueva_solicitud = Solicitud(articulos, destino, ventana_inicio, ventana_fin)
-        self.validar_recorrido(self.solicitudes + [nueva_solicitud])  #VER SI FUNCIONA ASÍ
-        self.peso_total = peso
-        self.volumen_total = volumen
-        self.solicitudes.append(nueva_solicitud)
-        nueva_solicitud.setter_viaje(self)
+        nueva_solicitud = Solicitud(destino, ventana_inicio, ventana_fin, *articulos)
+        self.agregar_solicitud(nueva_solicitud)
         return nueva_solicitud
 
     @staticmethod
@@ -90,9 +82,9 @@ class Viaje:
                 llegada = solicitud.getter_ventana_inicio()
             horario = llegada + timedelta(minutes=10)
             ubicacion = lugar
-        distancia = self.matriz.obtener_distancia(ubicacion, self.deposito)
-        tiempo_hrs = distancia / self.transporte.getter_velocidad()
-        llegada = horario + timedelta(hours=tiempo_hrs)
+        # distancia = self.matriz.obtener_distancia(ubicacion, self.deposito) #NO LO ESTAMOS USANDO, desde acá ya es True a menos que la matriz esté incompleta
+        # tiempo_hrs = distancia / self.transporte.getter_velocidad()
+        # llegada = horario + timedelta(hours=tiempo_hrs)
         return True
 
     def distancia_total(self):
@@ -125,25 +117,23 @@ class Viaje:
     def getter_paradas(self):
         return self.paradas_resueltas + self.paradas_pendientes()
     def paradas_pendientes(self):
-        pendientes = []
-        auxiliar = Cola()
-        while not self.paradas.esVacia():
-            parada = self.paradas.desencolar()
-            pendientes.append(parada)
-            auxiliar.encolar(parada)
-        self.paradas = auxiliar
-        return pendientes
+        return list(self.paradas)
     def setter_estado(self, estado):
+        if self.estado == "FINALIZADO" or (self.estado == "EN_CURSO" and estado != "FINALIZADO") or (self.estado == "PLANIFICADO" and estado != "EN_CURSO"):
+            raise TransicionIlegalError(f"El ciclo de un viaje es PLANIFICADO -> EN_CURSO -> FINALIZADO")
         self.estado = self.validar_estado(estado)
         return None
     def setter_peso(self, peso):
+        if not (isinstance(peso, (int, float)) and not isinstance(peso, bool) and isfinite(peso)) or peso < 0:
+            raise DatoInvalidoError(f"El peso debe ser un número no negativo")
         self.peso_total = peso
         return None
     def setter_volumen(self, volumen):
+        if not (isinstance(volumen, (int, float)) and not isinstance(volumen, bool) and isfinite(volumen)) or volumen < 0:
+            raise DatoInvalidoError(f"El volumen debe ser un número no negativo")
         self.volumen_total = volumen
         return None
 
-    # Agregar solicitud es solo despues de que una solicitud tenga un incidente, sino se usa solo crear
     def agregar_solicitud(self, nueva_solicitud):
         if not isinstance(nueva_solicitud, Solicitud):
             raise TypeError(f"La solicitud {nueva_solicitud} es de type {type(nueva_solicitud)}")
@@ -152,6 +142,16 @@ class Viaje:
         viaje_anterior = nueva_solicitud.getter_viaje()
         if viaje_anterior is not None and (viaje_anterior.getter_estado() in ("PLANIFICADO", "EN_CURSO") or nueva_solicitud.getter_comprobante() is not None):
             raise SolicitudDuplicadaError(nueva_solicitud.getter_id())
+        articulos = nueva_solicitud.getter_articulos()
+        peso = reduce(lambda x, y: x + y, map(lambda a: a.getter_peso(), articulos), self.peso_total)
+        volumen = reduce(lambda x, y: x + y, map(lambda a: a.getter_volumen(), articulos), self.volumen_total)
+        if peso > self.transporte.getter_peso_max():
+            raise ExcesoPesoError(self.transporte.getter_peso_max(), peso)
+        elif volumen > self.transporte.getter_volumen():
+            raise ExcesoVolumenError(self.transporte.getter_volumen(), volumen)
+        self.validar_recorrido(chain(self.solicitudes, (nueva_solicitud,)))
+        self.peso_total = peso
+        self.volumen_total = volumen
         self.solicitudes.append(nueva_solicitud)
         nueva_solicitud.setter_viaje(self)
         return None
@@ -166,6 +166,21 @@ class Viaje:
         if isinstance(otro, Viaje):
             return self.id == otro.getter_id()
         return False
+    def __hash__(self):
+        return hash(self.id)
+
+    def ordenar_solicitudes(self):
+        try:
+            orden = Vecinos.sugerir_orden(self.deposito, self.solicitudes, self.matriz)
+            self.validar_recorrido(orden)
+            return orden
+        except (VentanaIncumplidaError, RutaIncompletaError):
+            try:
+                orden = VentanasTiempo.sugerir_orden(self.deposito, self.solicitudes, self.matriz)
+                self.validar_recorrido(orden)
+                return orden
+            except (VentanaIncumplidaError, RutaIncompletaError):
+                return self.solicitudes
 
     # DESDE ACÁ EL VIAJE ESTÁ INICIADO
     def iniciar_viaje(self):
@@ -174,6 +189,7 @@ class Viaje:
         if not self.solicitudes:
             raise ViajeVacioError("Viaje Vacio: El viaje aún no tiene solicitudes")
         
+        self.solicitudes = self.ordenar_solicitudes()
         self.paradas = Cola()
         self.paradas_resueltas = []
         horario = self.horario
@@ -197,6 +213,8 @@ class Viaje:
             raise EstadoInvalidoError("registrar_entrega", self.estado)
         if hora_real < self.horario:
             raise DatoInvalidoError("La hora de entrega no puede ser anterior al horario de salida del viaje")
+        if self.paradas_resueltas and hora_real < self.paradas_resueltas[-1].getter_hora_real():
+            raise DatoInvalidoError("La hora de entrega no puede ser anterior a la de la parada previa")
         if self.paradas.esVacia():
             raise SinParadasPendientesError("registrar_entrega")
         parada_pendiente = self.paradas.frente()
@@ -206,15 +224,17 @@ class Viaje:
             self.finalizar_viaje()
         return comprobante
 
-    def registrar_incidente(self, tipo, fecha, descripcion):
+    def registrar_incidente(self, tipo, fecha, descripcion, **detalles):
         if self.estado != "EN_CURSO":
             raise EstadoInvalidoError("registrar_incidente", self.estado)
         if fecha < self.horario:
             raise DatoInvalidoError("La fecha del incidente no puede ser anterior al horario de salida del viaje")
+        if self.paradas_resueltas and fecha < self.paradas_resueltas[-1].getter_hora_real():
+            raise DatoInvalidoError("La fecha del incidente no puede ser anterior a la de la parada previa")
         if self.paradas.esVacia():
             raise SinParadasPendientesError("registrar_incidente")
         parada_pendiente = self.paradas.frente()
-        incidente = Incidente(tipo, fecha, descripcion, parada_pendiente.getter_solicitud())
+        incidente = Incidente(tipo, fecha, descripcion, parada_pendiente.getter_solicitud(), **detalles)
         parada_pendiente.setter_estado("FALLIDA")
         parada_pendiente.setter_hora_real(fecha)
         self.incidentes.append(incidente)
@@ -227,6 +247,6 @@ class Viaje:
         if self.estado != "EN_CURSO":
             raise EstadoInvalidoError("finalizar_viaje", self.estado)
         if not self.paradas.esVacia():
-            raise ViajeIncompletoError(len(self.paradas_pendientes()))
+            raise ViajeIncompletoError(self.paradas.get_longitud())
         self.estado = "FINALIZADO"
         print(f"VIAJE FINALIZADO: {self.deposito}", self.paradas_resueltas, sep=", ")
