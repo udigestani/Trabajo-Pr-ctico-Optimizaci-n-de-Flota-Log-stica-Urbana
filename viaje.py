@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from solicitud import Solicitud
 from parada import Parada
 from cola import Cola
+from pila import Pila
 from politicaordenamiento import Vecinos, VentanasTiempo
 from validaciones import Validaciones
 from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, RutaIncompletaError, TransicionIlegalError
@@ -25,6 +26,7 @@ class Viaje:
         self.incidentes = []
         self.paradas = Cola()
         self.paradas_resueltas = []
+        self.historial_solicitudes = Pila()
         Viaje.curr_id += 1
         self.id = Viaje.curr_id
 
@@ -121,8 +123,22 @@ class Viaje:
         self.peso_total = peso
         self.volumen_total = volumen
         self.solicitudes.append(nueva_solicitud)
+        self.historial_solicitudes.apilar(nueva_solicitud)
         nueva_solicitud.setter_viaje(self)
         return None
+
+    def deshacer_ultima_solicitud(self):
+        if self.estado != "PLANIFICADO":
+            raise EstadoInvalidoError("deshacer_ultima_solicitud", self.estado)
+        if self.historial_solicitudes.esVacia():
+            raise ViajeVacioError("Viaje Vacio: No hay solicitudes para deshacer")
+        solicitud = self.historial_solicitudes.desapilar()
+        articulos = solicitud.getter_articulos()
+        self.peso_total -= sum(map(lambda a: a.getter_peso(), articulos))
+        self.volumen_total -= sum(map(lambda a: a.getter_volumen(), articulos))
+        self.solicitudes.remove(solicitud)
+        solicitud.setter_viaje(None)
+        return solicitud
     def __str__(self):
         tipo_transporte = self.transporte.getter_tipo()
         fecha = self.horario.strftime('%Y-%m-%d %H:%M')

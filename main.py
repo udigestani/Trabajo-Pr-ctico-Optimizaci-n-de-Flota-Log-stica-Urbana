@@ -145,6 +145,7 @@ def mostrar_menu():
     print("8) Comparar politicas de ordenamiento")
     print("9) Salir")
     print("0) Ver ubicaciones cargadas / agregar una distancia nueva")
+    print("10) Deshacer la ultima solicitud agregada al viaje actual")
 
 
 def main():
@@ -267,6 +268,13 @@ def main():
                 agregar = input("Queres agregar una distancia nueva? (s/n): ").strip().lower()
                 if agregar == "s":
                     agregar_tramo_interactivo(matriz)
+
+            elif opcion == "10":
+                if viaje_actual is None:
+                    print("Todavia no hay ningun viaje creado.")
+                    continue
+                solicitud = viaje_actual.deshacer_ultima_solicitud()
+                print(f"Solicitud deshecha: {solicitud}")
 
             else:
                 print("Opcion invalida, elegi un numero del menu.")
