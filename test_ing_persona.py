@@ -50,11 +50,11 @@ def test_dni_duplicado_entre_subclases():
     with pytest.raises(DNIInvalidoError, match="El DNI 23456789 ya está registrado"):
         Solicitante("Luis Diaz", 23456789, 1145678901)
 def test_dni_no_entero():
-    with pytest.raises(DatoInvalidoError, match="El DNI 12345678 debe ser un número entero positivo de 8 dígitos"):
+    with pytest.raises(DatoInvalidoError, match="El DNI 12345678 debe ser un número entero positivo de 7 o 8 dígitos"):
         Persona("Juan Perez", "12345678", 1123456789)
     assert Persona.getter_dnis_registrados() == {}
 def test_dni_largo_invalido():
-    with pytest.raises(DatoInvalidoError, match="El DNI 123456789 debe ser un número entero positivo de 8 dígitos"):
+    with pytest.raises(DatoInvalidoError, match="El DNI 123456789 debe ser un número entero positivo de 7 o 8 dígitos"):
         Persona("Juan Perez", 123456789, 1123456789)
     assert 123456789 not in Persona.getter_dnis_registrados()
 def test_telefono_largo_invalido():
@@ -66,7 +66,7 @@ def test_telefono_no_entero():
     with pytest.raises(DatoInvalidoError, match="El teléfono 1123456789 debe ser un número entero positivo de 10 dígitos"):
         Persona("Juan Perez", 12345678, "1123456789")
 def test_nombre_vacio():
-    with pytest.raises(DatoInvalidoError, match="debe ser una cadena de caracteres no vacía"):
+    with pytest.raises(DatoInvalidoError, match="El nombre no debe estar vacío"):
         Persona("", 12345678, 1123456789)
     assert Persona.getter_dnis_registrados() == {}
 
@@ -92,5 +92,5 @@ def test_nombre_solo_espacios():
 #     assert persona_base in personas
 
 def test_validar_viaje_creando_solicitud():
-    with pytest.raises(DatoInvalidoError):
+    with pytest.raises(TypeError, match="El viaje no soy un viaje debe ser un objeto de clase Viaje"):
         Solicitante.crear_solicitud("no soy un viaje", "Destino A", datetime(2024, 6, 1, 9, 0), datetime(2024, 6, 1, 12, 0))

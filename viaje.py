@@ -5,19 +5,19 @@ from solicitud import Solicitud
 from parada import Parada
 from cola import Cola
 from politicaordenamiento import Vecinos, VentanasTiempo
+from validaciones import Validaciones
 from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, RutaIncompletaError, TransicionIlegalError
 from functools import reduce
 from itertools import chain
-from math import isfinite
 
 class Viaje:
     curr_id = 0
     def __init__(self, transporte, deposito, horario, matriz, estado = "PLANIFICADO"):
-        self.transporte = self.validar_transporte(transporte)
-        self.deposito = self.validar_deposito(deposito)
-        self.horario = self.validar_horario(horario)
+        self.transporte = Validaciones.validar_instancia(transporte, clase = Transporte, nombre = "transporte")
+        self.deposito = Validaciones.validar_str(deposito, nombre = "depósito")
+        self.horario = Validaciones.validar_fecha(horario, nombre = "horario de salida del viaje")
         self.matriz = self.validar_matriz(matriz)
-        self.estado = self.validar_estado(estado)
+        self.estado = Validaciones.validar_en(estado, opciones = "PLANIFICADO, EN_CURSO, FINALIZADO", nombre = "estado del viaje")
 
         self.peso_total = 0
         self.volumen_total = 0
@@ -37,36 +37,9 @@ class Viaje:
         return nueva_solicitud
 
     @staticmethod
-    def validar_transporte(transporte):
-        if isinstance(transporte, Transporte):
-            return transporte
-        raise TypeError(f"El transporte {transporte} debe ser de clase trasporte")
-
-    @staticmethod
-    def validar_deposito(deposito):
-        if isinstance(deposito, str) and deposito.strip():
-            return deposito
-        raise DatoInvalidoError("El depósito debe ser una cadena str no vacía")
-
-    @staticmethod
-    def validar_matriz(matriz): 
+    def validar_matriz(matriz):
         from matrizdistancia import MatrizDistancia
-        if isinstance(matriz, MatrizDistancia):
-            return matriz
-        raise TypeError("La matriz debe ser un objeto de clase MatrizDistancia")
-
-    @staticmethod
-    def validar_estado(estado):
-        if estado not in ("PLANIFICADO", "EN_CURSO", "FINALIZADO"):
-            raise DatoInvalidoError("El estado del viaje debe ser PLANIFICADO, EN_CURSO o FINALIZADO")
-        return estado
-
-    @staticmethod
-    def validar_horario(horario):
-        if not isinstance(horario, datetime):
-            raise TypeError("El horario de salida del viaje debe ser un objeto datetime")
-        else:
-            return horario
+        return Validaciones.validar_instancia(matriz, clase = MatrizDistancia, nombre = "matriz")
 
     def validar_recorrido(self, recorrido_nuevo):
         horario = self.horario
@@ -121,22 +94,17 @@ class Viaje:
     def setter_estado(self, estado):
         if self.estado == "FINALIZADO" or (self.estado == "EN_CURSO" and estado != "FINALIZADO") or (self.estado == "PLANIFICADO" and estado != "EN_CURSO"):
             raise TransicionIlegalError(f"El ciclo de un viaje es PLANIFICADO -> EN_CURSO -> FINALIZADO")
-        self.estado = self.validar_estado(estado)
+        self.estado = Validaciones.validar_en(estado, opciones = "PLANIFICADO, EN_CURSO, FINALIZADO", nombre = "estado del viaje")
         return None
     def setter_peso(self, peso):
-        if not (isinstance(peso, (int, float)) and not isinstance(peso, bool) and isfinite(peso)) or peso < 0:
-            raise DatoInvalidoError(f"El peso debe ser un número no negativo")
-        self.peso_total = peso
+        self.peso_total = Validaciones.validar_numero(peso, cero = True, nombre = "peso")
         return None
     def setter_volumen(self, volumen):
-        if not (isinstance(volumen, (int, float)) and not isinstance(volumen, bool) and isfinite(volumen)) or volumen < 0:
-            raise DatoInvalidoError(f"El volumen debe ser un número no negativo")
-        self.volumen_total = volumen
+        self.volumen_total = Validaciones.validar_numero(volumen, cero = True, nombre = "volumen")
         return None
 
     def agregar_solicitud(self, nueva_solicitud):
-        if not isinstance(nueva_solicitud, Solicitud):
-            raise TypeError(f"La solicitud {nueva_solicitud} es de type {type(nueva_solicitud)}")
+        Validaciones.validar_instancia(nueva_solicitud, clase = Solicitud, nombre = "solicitud")
         if self.estado != "PLANIFICADO":
             raise EstadoInvalidoError("agregar_solicitud", self.estado)
         viaje_anterior = nueva_solicitud.getter_viaje()
@@ -211,6 +179,7 @@ class Viaje:
     def registrar_entrega(self, hora_real, receptor, monto):
         if self.estado != "EN_CURSO":
             raise EstadoInvalidoError("registrar_entrega", self.estado)
+        Validaciones.validar_fecha(hora_real, nombre = "hora de entrega")
         if hora_real < self.horario:
             raise DatoInvalidoError("La hora de entrega no puede ser anterior al horario de salida del viaje")
         if self.paradas_resueltas and hora_real < self.paradas_resueltas[-1].getter_hora_real():
@@ -227,6 +196,7 @@ class Viaje:
     def registrar_incidente(self, tipo, fecha, descripcion, **detalles):
         if self.estado != "EN_CURSO":
             raise EstadoInvalidoError("registrar_incidente", self.estado)
+        Validaciones.validar_fecha(fecha, nombre = "fecha del incidente")
         if fecha < self.horario:
             raise DatoInvalidoError("La fecha del incidente no puede ser anterior al horario de salida del viaje")
         if self.paradas_resueltas and fecha < self.paradas_resueltas[-1].getter_hora_real():

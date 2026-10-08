@@ -1,25 +1,17 @@
-from excepciones import DatoInvalidoError
-from math import isfinite
+from validaciones import Validaciones
 
 class Transporte:
     curr_id = 0
     def __init__(self, peso_max, volumen, velocidad, costo_km, costo_parada, factor_ambiental):
-        self.peso_max = self.validar_positivo(peso_max)
-        self.costo_km = self.validar_positivo(costo_km)
-        self.factor_ambiental = self.validar_positivo(factor_ambiental)
-        self.volumen = self.validar_positivo(volumen)
-        self.velocidad = self.validar_positivo(velocidad)
-        self.costo_parada = self.validar_positivo(costo_parada)
+        self.peso_max = Validaciones.validar_numero(peso_max, nombre = "peso_max")
+        self.costo_km = Validaciones.validar_numero(costo_km, nombre = "costo_km")
+        self.factor_ambiental = Validaciones.validar_numero(factor_ambiental, nombre = "factor_ambiental")
+        self.volumen = Validaciones.validar_numero(volumen, nombre = "volumen")
+        self.velocidad = Validaciones.validar_numero(velocidad, nombre = "velocidad")
+        self.costo_parada = Validaciones.validar_numero(costo_parada, nombre = "costo_parada")
 
         Transporte.curr_id += 1      
         self.id = Transporte.curr_id
-
-    @staticmethod
-    def validar_positivo(numero):
-        if isinstance(numero, (int, float)) and not isinstance(numero, bool) and isfinite(numero) and numero > 0:
-            return numero
-        raise DatoInvalidoError(f"Los valores de instancia del transporte deben ser positivos")
-        
 
     def calcular_impacto_ambiental(self, distancia, peso):
         return self.factor_ambiental * distancia

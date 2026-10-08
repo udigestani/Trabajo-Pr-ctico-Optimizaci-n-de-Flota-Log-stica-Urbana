@@ -1,14 +1,14 @@
 from comprobante import Comprobante
 from articulo import Articulo
-from datetime import datetime
-from excepciones import DatoInvalidoError, VentanaInvalidaError, EstadoInvalidoError
+from excepciones import EstadoInvalidoError
+from validaciones import Validaciones
 
 class Solicitud:
     curr_id = 0
     def __init__(self, destino, ventana_inicio, ventana_fin, *articulos):
-        self.articulos = self.validar_articulos(articulos)
-        self.destino = self.validar_ubicacion(destino)
-        self.ventana_inicio, self.ventana_fin = self.validar_ventana_horaria(ventana_inicio, ventana_fin) # hice esta validacion y cambie que los parametroz sea ventana_inicio y ventana_fin, asumiendo que entran 2 parametros y no como una tupla de ultima lo cambiamos dsp tipo antes habia ventana horaria, entonces deberia ser tipo ventana_horaria = (ventana_inicio, ventana_fin), pero queda mas prolijo asi
+        self.articulos = Validaciones.validar_coleccion(articulos, tipo = tuple, clase = Articulo, nombre = "lista de artículos")
+        self.destino = Validaciones.validar_str(destino, nombre = "destino")
+        self.ventana_inicio, self.ventana_fin = Validaciones.validar_ventana(ventana_inicio, ventana_fin) # hice esta validacion y cambie que los parametroz sea ventana_inicio y ventana_fin, asumiendo que entran 2 parametros y no como una tupla de ultima lo cambiamos dsp tipo antes habia ventana horaria, entonces deberia ser tipo ventana_horaria = (ventana_inicio, ventana_fin), pero queda mas prolijo asi
         self.viaje = None
         self.comprobante = None
         Solicitud.curr_id += 1
@@ -20,33 +20,6 @@ class Solicitud:
         self.comprobante = Comprobante(self, fecha_Hora, receptor, monto)
         return self.comprobante
     
-    @staticmethod
-    def validar_ubicacion(ubicacion):
-        if isinstance(ubicacion, str):
-            if not ubicacion.strip():
-                raise DatoInvalidoError(f"La ubicación debe ser no vacía")
-            return ubicacion
-        raise TypeError(f"La ubicacion debe ser una cadena str")
-
-    @staticmethod
-    def validar_articulos(articulos):
-        if isinstance(articulos, tuple):
-            if len(articulos) == 0:
-                raise DatoInvalidoError(f"La solicitud debe contener por lo menos un artículo")
-            for articulo in articulos:
-                if not isinstance(articulo, Articulo):
-                    raise TypeError(f"La lista de articulos {articulos} contiene un articulo {articulo} no válido")
-            return articulos
-        raise TypeError(f"Los articulos {articulos} deben ser una tupla")
-
-    @staticmethod
-    def validar_ventana_horaria(ventana_inicio, ventana_fin):
-        if not isinstance(ventana_inicio, datetime) or not isinstance(ventana_fin, datetime):
-            raise TypeError("La ventana horaria debe estar compuesta por objetos datetime")
-        if ventana_inicio > ventana_fin:
-            raise VentanaInvalidaError(ventana_inicio, ventana_fin)
-        else:
-            return ventana_inicio, ventana_fin
     def __str__(self):
         return f"Solicitud {self.id} hacia {self.destino} (Ventana: {self.ventana_inicio.strftime('%H:%M')}-{self.ventana_fin.strftime('%H:%M')})"
 

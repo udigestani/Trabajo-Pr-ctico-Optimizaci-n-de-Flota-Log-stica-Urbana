@@ -1,52 +1,23 @@
-from excepciones import DatoInvalidoError
-from datetime import datetime
+from validaciones import Validaciones
 from solicitud import Solicitud
 
 
 class Incidente:
     curr_id = 0
     def __init__(self, tipo, fecha, descripcion, afectado, **detalles):
-        self.tipo = self.validar_tipo(tipo)
-        self.fecha = self.validar_fecha(fecha)
-        self.descripcion = self.validar_descripcion(descripcion)
-        self.afectado = self.validar_afectado(afectado)
+        self.tipo = Validaciones.validar_en(tipo, opciones = "DAÑO, AUSENTE, RETRASO", nombre = "tipo del incidente")
+        self.fecha = Validaciones.validar_fecha(fecha, nombre = "fecha del incidente")
+        self.descripcion = Validaciones.validar_str(descripcion, nombre = "descripción").strip()
+        self.afectado = Validaciones.validar_instancia(afectado, clase = Solicitud, nombre = "afectado")
         self.detalles = self.validar_detalles(detalles)
         Incidente.curr_id += 1
         self.id = Incidente.curr_id
 
     @staticmethod
-    def validar_tipo(tipo):
-        if not isinstance(tipo, str):
-            raise TypeError(f"El tipo del incidente debe ser DAÑO, AUSENTE o RETRASO")
-        if tipo not in ("DAÑO", "AUSENTE", "RETRASO"):
-            raise DatoInvalidoError(f"El tipo del incidente debe ser DAÑO, AUSENTE o RETRASO")
-        return tipo
-
-    @staticmethod
-    def validar_descripcion(cadena):
-        if isinstance(cadena, str):
-            if cadena.strip():
-                return cadena.strip()
-            raise DatoInvalidoError(f"La descripcion {cadena} no debe estar vacia")
-        raise TypeError(f"La descripcion {cadena} debe ser una cadena str")
-
-    @staticmethod
-    def validar_fecha(fecha):
-        if not isinstance(fecha, datetime):
-            raise TypeError("fecha debe ser un objeto datetime")
-        return fecha
-
-    @staticmethod
-    def validar_afectado(afectado):
-        if not isinstance(afectado, Solicitud):
-            raise TypeError("El incidente debe referenciar a una Solicitud")
-        return afectado
-
-    @staticmethod
     def validar_detalles(detalles):
         for clave, valor in detalles.items():
-            if isinstance(valor, str) and not valor.strip():
-                raise DatoInvalidoError(f"El detalle {clave} no puede ser una cadena vacía")
+            if isinstance(valor, str):
+                Validaciones.validar_str(valor, nombre = f"detalle {clave}")
         return detalles
     def getter_tipo(self):
         return self.tipo

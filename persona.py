@@ -2,35 +2,15 @@ from viaje import Viaje
 from solicitud import Solicitud
 from datetime import datetime 
 from transporte import Transporte
-from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, DNIInvalidoError
+from validaciones import Validaciones
 
 class Persona:
     dnis_registrados = {}
     def __init__(self, nombre, dni, telefono):
-        self.nombre = self.validar_nombre(nombre)
-        self.dni = self.validar_dni(dni)
-        self.telefono = self.validar_telefono(telefono)
+        self.nombre = Validaciones.validar_str(nombre, nombre = "nombre")
+        self.dni = Validaciones.validar_dni(dni, Persona.dnis_registrados)
+        self.telefono = Validaciones.validar_digitos(telefono, 10, "teléfono")
         Persona.dnis_registrados[self.dni] = self
-
-    @classmethod
-    def validar_dni(cls, dni):
-        if isinstance(dni, int) and (len(str(dni)) == 8 or len(str(dni)) == 7) and dni > 0:
-            if dni in cls.dnis_registrados:
-                raise DNIInvalidoError(dni)
-            return dni
-        raise DatoInvalidoError(f"El DNI {dni} debe ser un número entero positivo de 8 dígitos")
-
-    @staticmethod
-    def validar_telefono(telefono):
-        if isinstance(telefono, int) and len(str(telefono)) == 10 and telefono > 0:
-            return telefono
-        raise DatoInvalidoError(f"El teléfono {telefono} debe ser un número entero positivo de 10 dígitos")
-
-    @staticmethod
-    def validar_nombre(nombre):
-        if isinstance(nombre, str) and len(nombre.strip()) > 0:
-            return nombre
-        raise DatoInvalidoError(f"El nombre {nombre} debe ser una cadena de caracteres no vacía")
 
     def getter_nombre(self):
         return self.nombre
@@ -73,6 +53,5 @@ class Solicitante(Persona):
 
     @staticmethod
     def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, *articulos):
-        if not isinstance(viaje, Viaje):
-            raise DatoInvalidoError(f"El viaje debe ser un objeto de clase Viaje")
+        Validaciones.validar_instancia(viaje, clase = Viaje, nombre = "viaje")
         return viaje.crear_solicitud(destino, ventana_inicio, ventana_fin, *articulos)

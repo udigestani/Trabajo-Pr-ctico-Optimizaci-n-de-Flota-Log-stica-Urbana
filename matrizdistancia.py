@@ -1,18 +1,13 @@
 from excepciones import DatoInvalidoError, RutaIncompletaError
-from math import isfinite
+from validaciones import Validaciones
 
 class MatrizDistancia:
     def __init__(self):
         self.distancias = {}
 
     def agregar_distancia(self, id_origen, id_destino, km):
-        if not isinstance(km, (int, float)) or isinstance(km, bool):
-            raise TypeError(f"La distancia {km} debe ser un int o un float")
-        if not isfinite(km):
-            raise DatoInvalidoError(f"La distancia {km} debe ser un número finito")
-        if km < 0:
-            raise DatoInvalidoError(f"La distancia {km} no puede ser negativa, solo nula o positiva")
-        elif id_origen == id_destino and km != 0:
+        Validaciones.validar_numero(km, cero = True, nombre = "distancia")
+        if id_origen == id_destino and km != 0:
             self.distancias[(id_origen, id_destino)] = 0
             raise DatoInvalidoError(f"La distancia entre {id_origen} y si mismo debe ser 0")
         else:

@@ -30,7 +30,7 @@ def viaje_base(matriz_base, transporte_base):
 #     with pytest.raises(DatoInvalidoError, match="El transporte TRANSPORTE debe ser de clase transporte"):
 #         Viaje("TRANSPORTE", "Deposito", datetime(2024, 6, 1, 9, 0), MatrizDistancia())
 # def test_deposito_invalido(transporte_base):
-#     with pytest.raises(DatoInvalidoError, match="El depósito debe ser una cadena str no vacía"):
+#     with pytest.raises(DatoInvalidoError, match="El depósito no debe estar vacío"):
 #         Viaje(transporte_base, 123, datetime(2024, 6, 1, 9, 0), MatrizDistancia())
 
 
@@ -62,10 +62,10 @@ def test_estado_invalido_finalizar_viaje(viaje_base):
 
 
 def test_transporte_invalido(matriz_base):
-    with pytest.raises(TypeError, match="El transporte TRANSPORTE debe ser de clase"):
+    with pytest.raises(TypeError, match="El transporte TRANSPORTE debe ser un objeto de clase Transporte"):
         Viaje("TRANSPORTE", "Deposito", datetime(2024, 6, 1, 9, 0), matriz_base)
 def test_deposito_invalido(transporte_base, matriz_base):
-    with pytest.raises(DatoInvalidoError, match="El depósito debe ser una cadena str no vacía"):
+    with pytest.raises(DatoInvalidoError, match="El depósito no debe estar vacío"):
         Viaje(transporte_base, "", datetime(2024, 6, 1, 9, 0), matriz_base)
 def test_exceso_peso(viaje_base):
     with pytest.raises(ExcesoPesoError, match="Capacidad excedida: El peso 600 supera el peso máximo del transporte 500"):
@@ -195,7 +195,7 @@ def test_incidente_sin_detalles(viaje_con_solicitudes):
 
 def test_incidente_detalle_vacio_invalido(viaje_con_solicitudes):
     viaje_con_solicitudes.iniciar_viaje()
-    with pytest.raises(DatoInvalidoError, match="El detalle rueda no puede ser una cadena vacía"):
+    with pytest.raises(DatoInvalidoError, match="El detalle rueda no debe estar vacío"):
         viaje_con_solicitudes.registrar_incidente("DAÑO", datetime(2024, 6, 1, 9, 40), "Pinchazo", rueda="  ")
 
 def test_metodos_magicos(viaje_con_solicitudes, transporte_base, matriz_base):
