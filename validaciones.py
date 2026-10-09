@@ -100,7 +100,10 @@ class Validaciones:
             if esta_vacia:
                 raise DatoInvalidoError(f"La {nombre} no debe estar vacía")
         if clase is not None:
+            if not isinstance(clase, tuple):
+                clase = (clase, )
+            clases = ", ".join(map(lambda c: c.__name__, clase))
             for elemento in coleccion:
                 if not isinstance(elemento, clase):
-                    raise TypeError(f"La {nombre} contiene {elemento}, que no es un objeto de clase {clase.__name__}")
+                    raise TypeError(f"La {nombre} contiene {elemento}, que no es un objeto de clase {clases}")
         return coleccion

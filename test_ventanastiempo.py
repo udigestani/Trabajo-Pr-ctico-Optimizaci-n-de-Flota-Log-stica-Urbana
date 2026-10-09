@@ -16,13 +16,13 @@ def crear_solicitud_falsa(mocker, hora_inicio):
 
 # test 1 --> no recibe solicitudes --> No ordena
 def test_ventana_ceroSolicitudes(mock_matriz):
-    resultado = VentanasTiempo.sugerir_orden("Deposito", (), mock_matriz)
+    resultado = VentanasTiempo.sugerir_orden("Deposito", [], mock_matriz)
     assert resultado == []
 
 # test 2 --> única solicitud
 def test_ventana_unaSolicitud(mocker, mock_matriz):
     mock_solicitud = crear_solicitud_falsa(mocker, 9)
-    resultado = VentanasTiempo.sugerir_orden("Deposito", (mock_solicitud,), mock_matriz)
+    resultado = VentanasTiempo.sugerir_orden("Deposito", [mock_solicitud], mock_matriz)
     assert resultado == [mock_solicitud]
 
 # test 3 --> funcionamiento normal
@@ -31,11 +31,11 @@ def test_ventana_ok(mocker, mock_matriz):
     mock_s2 = crear_solicitud_falsa(mocker, 13)
     mock_s3 = crear_solicitud_falsa(mocker, 11)
     mock_s4 = crear_solicitud_falsa(mocker, 9)
-    solicitudes = (mock_s1, mock_s2, mock_s3, mock_s4)
+    solicitudes = [mock_s1, mock_s2, mock_s3, mock_s4]
     resultado = VentanasTiempo.sugerir_orden("Deposito", solicitudes, mock_matriz)
     assert resultado == [mock_s4, mock_s1, mock_s3, mock_s2]
-    assert tuple(resultado) != solicitudes #Para ver que no modifica las solicitudes, solo devuelve el orden
-    assert solicitudes == (mock_s1, mock_s2, mock_s3, mock_s4) # la lista original sigue con su orden de entrada
+    assert resultado != solicitudes #Para ver que no modifica las solicitudes, solo devuelve el orden
+    assert solicitudes == [mock_s1, mock_s2, mock_s3, mock_s4] # la lista original sigue con su orden de entrada
 
 # test 4 --> solicitudes que ya estaban ordenadas no cambian
 def test_ventana_sinModificacion(mocker, mock_matriz):
@@ -43,10 +43,10 @@ def test_ventana_sinModificacion(mocker, mock_matriz):
     mock_s2 = crear_solicitud_falsa(mocker, 12)
     mock_s3 = crear_solicitud_falsa(mocker, 13)
     mock_s4 = crear_solicitud_falsa(mocker, 14)
-    solicitudes = (mock_s1, mock_s2, mock_s3, mock_s4)
+    solicitudes = [mock_s1, mock_s2, mock_s3, mock_s4]
     resultado = VentanasTiempo.sugerir_orden("Deposito", solicitudes, mock_matriz)
     assert resultado == [mock_s1, mock_s2, mock_s3, mock_s4]
-    assert tuple(resultado) == solicitudes
+    assert resultado == solicitudes
 
 # test 5 --> hay empates
 def test_ventana_empates(mocker, mock_matriz):
@@ -55,7 +55,7 @@ def test_ventana_empates(mocker, mock_matriz):
     mock_s3 = crear_solicitud_falsa(mocker, 15)
     mock_s4 = crear_solicitud_falsa(mocker, 13)
     mock_s5 = crear_solicitud_falsa(mocker, 11)
-    solicitudes = (mock_s1, mock_s2, mock_s3, mock_s4, mock_s5)
+    solicitudes = [mock_s1, mock_s2, mock_s3, mock_s4, mock_s5]
     resultado = VentanasTiempo.sugerir_orden("Deposito", solicitudes, mock_matriz)
     assert resultado in ([mock_s5, mock_s1, mock_s2, mock_s4, mock_s3], [mock_s5, mock_s1, mock_s4, mock_s2, mock_s3])    
 
@@ -64,7 +64,7 @@ def test_ventana_ignoraMatrizYDeposito(mocker, mock_matriz):
     mock_s1 = crear_solicitud_falsa(mocker, 14)
     mock_s2 = crear_solicitud_falsa(mocker, 9)
     
-    solicitudes = (mock_s1, mock_s2)
+    solicitudes = [mock_s1, mock_s2]
     resultado_a = VentanasTiempo.sugerir_orden("Deposito A", solicitudes, mock_matriz)
     resultado_b = VentanasTiempo.sugerir_orden("Deposito B", solicitudes, mock_matriz)
 
@@ -86,22 +86,22 @@ def test_ventana_heredaDePolitica():
 def test_ventana_estatico(mocker, mock_matriz):
     mock_s1 = crear_solicitud_falsa(mocker, 14)
     mock_s2 = crear_solicitud_falsa(mocker, 9)
-    solicitudes = (mock_s1, mock_s2)
+    solicitudes = [mock_s1, mock_s2]
 
     orden_clase = VentanasTiempo.sugerir_orden("Deposito", solicitudes, mock_matriz)
     orden_instancia = VentanasTiempo().sugerir_orden("Deposito", solicitudes, mock_matriz)
 
     assert orden_clase == orden_instancia == [mock_s2, mock_s1]
 
-# test 9 --> TypeError cuando solicitudes no pasa un iterable
-def test_ventana_solicitudesNoIterable(mock_matriz):
-    with pytest.raises(TypeError, match = "La solicitudes None debe ser de tipo tuple"):
+# test 9 --> TypeError cuando solicitudes no pasa una lista
+def test_ventana_solicitudesNoLista(mock_matriz):
+    with pytest.raises(TypeError, match = "La solicitudes None debe ser de tipo list"):
         VentanasTiempo.sugerir_orden("Deposito", None, mock_matriz) #podriamos probar str, int
 
 # test 10 --> TypeError cuando las solicitudes no son solicitudes
 def test_ventana_elementoNoSolicitud(mock_matriz):
     with pytest.raises(TypeError, match = "La solicitudes contiene 5, que no es un objeto de clase Solicitud"):
-        VentanasTiempo.sugerir_orden("Deposito", (5, 12, 8, 3), mock_matriz) #podriamos probar str, int
+        VentanasTiempo.sugerir_orden("Deposito", [5, 12, 8, 3], mock_matriz) #podriamos probar str, int
 
 # test 11 --> TypeError si la fehca no es datetime
 def test_ventana_fechaNoValida(mocker, mock_matriz):
@@ -109,7 +109,7 @@ def test_ventana_fechaNoValida(mocker, mock_matriz):
     mock_s2 = mocker.Mock(spec = Solicitud)
     mock_s2.getter_ventana_inicio.return_value = 8   # podríamos probar con otros tipos de fecha que también debería dar error
     
-    solicitudes = (mock_s1, mock_s2)
+    solicitudes = [mock_s1, mock_s2]
 
     with pytest.raises(TypeError, match = "La ventanas contiene 8, que no es un objeto de clase datetime"):
         VentanasTiempo.sugerir_orden("Deposito", solicitudes, mock_matriz)
@@ -124,7 +124,7 @@ def test_ventana_depositoInvalido(mock_matriz):
 def test_ventana_matrizInvalida(mocker):
     mock_s1 = crear_solicitud_falsa(mocker, 10)
     mock_s2 = crear_solicitud_falsa(mocker, 13)
-    solicitudes = (mock_s1, mock_s2)
+    solicitudes = [mock_s1, mock_s2]
     matriz = {("Deposito", "D1"):10}
     with pytest.raises(TypeError, match="debe ser un objeto de clase MatrizDistancia"):
         VentanasTiempo.sugerir_orden("Deposito", solicitudes, matriz)
