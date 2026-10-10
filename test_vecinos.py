@@ -41,7 +41,7 @@ def test_vecinos_unaSolicitud(mocker, mock_matriz):
     resultado = Vecinos.sugerir_orden("Deposito", [mock_solicitud], mock_matriz)
     assert resultado == [mock_solicitud]
 
-# 
+# funcionamiento normal
 def test_vecinos_ok(mocker, mock_matriz):
     mock_s1 = crear_solicitud_falsa(mocker, "mock_s1")
     mock_s2 = crear_solicitud_falsa(mocker, "mock_s2")
