@@ -5,7 +5,7 @@ class Pila:
         self.tope = None
         self.longitud = 0
     def esVacia(self):
-        return self.tope == None
+        return self.tope is None
     def ver_tope(self):
         if self.esVacia():
             raise ValueError("No se puede ver el tope porque la pila está vacía")
