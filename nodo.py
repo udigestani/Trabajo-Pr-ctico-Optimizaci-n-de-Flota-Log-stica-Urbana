@@ -4,3 +4,5 @@ class Nodo:
         self.siguiente = None
     def __str__(self):
         return f"{self.dato}"
+    def __repr__(self):
+        return f"Nodo({self.dato})"
