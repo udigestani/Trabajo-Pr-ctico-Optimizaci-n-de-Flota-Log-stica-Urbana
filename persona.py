@@ -1,7 +1,4 @@
 from viaje import Viaje
-from solicitud import Solicitud
-from datetime import datetime 
-from transporte import Transporte
 from validaciones import Validaciones
 
 class Persona:
