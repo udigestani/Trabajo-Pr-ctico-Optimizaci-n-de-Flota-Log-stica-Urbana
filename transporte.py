@@ -33,6 +33,12 @@ class Transporte:
     def getter_velocidad(self):
         return self.velocidad
 
+    def getter_costo_km(self):
+        return self.costo_km
+
+    def getter_costo_parada(self):
+        return self.costo_parada
+
     def getter_tipo(self):
         return self.__class__.__name__
 
