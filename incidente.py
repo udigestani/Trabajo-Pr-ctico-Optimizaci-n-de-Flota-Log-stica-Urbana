@@ -1,6 +1,6 @@
 from validaciones import Validaciones
 from solicitud import Solicitud
-
+from transporte import Transporte
 
 class Incidente:
     curr_id = 0
@@ -8,7 +8,7 @@ class Incidente:
         self.tipo = Validaciones.validar_en(tipo, opciones = "DAÑO, AUSENTE, RETRASO", nombre = "tipo del incidente")
         self.fecha = Validaciones.validar_fecha(fecha, nombre = "fecha del incidente")
         self.descripcion = Validaciones.validar_str(descripcion, nombre = "descripción").strip()
-        self.afectado = Validaciones.validar_instancia(afectado, clase = Solicitud, nombre = "afectado")
+        self.afectado = Validaciones.validar_instancia(afectado, clase = (Solicitud, Transporte), nombre = "afectado")
         self.detalles = self.validar_detalles(detalles)
         Incidente.curr_id += 1
         self.id = Incidente.curr_id
@@ -25,6 +25,12 @@ class Incidente:
         return self.afectado
     def getter_detalles(self):
         return self.detalles.copy()
+    def getter_id(self):
+        return self.id
+    def getter_fecha(self):
+        return self.fecha
+    def getter_descripcion(self):
+        return self.descripcion
 
     def __str__(self):
         fecha_str = self.fecha.strftime('%H:%M')
