@@ -26,7 +26,7 @@ class ExcesoVolumenError(CapacidadExcedidaError):
 
 class RutaIncompletaError(FlotaError):
     def __init__(self, origen, destino):
-        super().__init__(f"Ruta incompleta: No existe distancia de {origen} a {destino} ")
+        super().__init__(f"Ruta incompleta: No existe distancia de {origen} a {destino}")
 
 class VentanaIncumplidaError(FlotaError):
     def __init__(self, lugar, hora_llegada, hora_fin):
