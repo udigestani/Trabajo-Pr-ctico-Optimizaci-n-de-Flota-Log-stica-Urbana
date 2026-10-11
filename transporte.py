@@ -1,4 +1,5 @@
 from validaciones import Validaciones
+from excepciones import ExcesoPesoError
 
 class Transporte:
     curr_id = 0
@@ -13,7 +14,14 @@ class Transporte:
         Transporte.curr_id += 1      
         self.id = Transporte.curr_id
 
+    def _validar_carga(self, distancia, peso):
+        Validaciones.validar_numero(distancia, cero = True, nombre = "distancia")
+        Validaciones.validar_numero(peso, cero = True, nombre = "peso")
+        if peso > self.peso_max:
+            raise ExcesoPesoError(self.peso_max, peso)
+
     def calcular_impacto_ambiental(self, distancia, peso):
+        self._validar_carga(distancia, peso)
         return self.factor_ambiental * distancia
     
     def getter_peso_max(self):
@@ -88,5 +96,6 @@ class Camion(Transporte):
         )
 
     def calcular_impacto_ambiental(self, distancia, peso):
+        self._validar_carga(distancia, peso)
         return (self.factor_ambiental + peso/10000)*distancia
 
