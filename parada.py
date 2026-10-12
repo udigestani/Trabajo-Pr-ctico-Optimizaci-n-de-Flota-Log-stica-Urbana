@@ -41,9 +41,15 @@ class Parada:
     def getter_estado(self):
         return self.estado
     def setter_estado(self, estado):
+        if self.estado != "PENDIENTE":
+            raise EstadoInvalidoError(f"settear estado a {estado}", f"la parada es {self.estado}")
+        if estado == "ENTREGADA" and self.comprobante is None:
+            raise EstadoInvalidoError("settear parada a ENTREGADA", "no tiene comprobante")
         self.estado = Validaciones.validar_en(estado, opciones = "FALLIDA, ENTREGADA", nombre = "estado")
         return None
     def setter_hora_real(self, hora_real):
+        if self.estado == "PENDIENTE":
+            raise EstadoInvalidoError("settear hora_real", "de la parada es PENDIENTE")
         self.hora_real = Validaciones.validar_fecha(hora_real, nombre = "hora_real")
         return None
     def getter_solicitud(self):
@@ -56,3 +62,5 @@ class Parada:
         return self.hora_real
     def getter_comprobante(self):
         return self.comprobante
+    def getter_id(self):
+        return self.id
