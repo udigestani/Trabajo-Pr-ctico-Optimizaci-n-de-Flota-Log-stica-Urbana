@@ -5,13 +5,13 @@ from solicitud import Solicitud
 
 class Parada:
     curr_id = 0
-    id_comprobante = 0
 
     def __init__(self, orden, solicitud, hora_prev, hora_real):
         self.orden = Validaciones.validar_numero(orden, entero = True, nombre = "orden de la parada")
         self.solicitud = Validaciones.validar_instancia(solicitud, clase = Solicitud, nombre = "solicitud")
         self.hora_prev = Validaciones.validar_fecha(hora_prev, nombre = "hora_prev")
         self.hora_real = Validaciones.validar_fecha(hora_real, vacio = True, nombre = "hora_real")
+        self.comprobante = None
 
         Parada.curr_id += 1
         self.id = Parada.curr_id
@@ -19,6 +19,8 @@ class Parada:
 
     def generar_comprobante(self, receptor, fecha, monto):
         if self.estado == "PENDIENTE":
+            if self.solicitud.getter_comprobante():
+                raise EstadoInvalidoError("generar_comprobante", "la solicitud ya tiene comprobante")
             self.comprobante = Comprobante(self.solicitud, fecha, receptor, monto)
             self.solicitud.setter_comprobante(self.comprobante)
             self.hora_real = fecha
@@ -52,3 +54,5 @@ class Parada:
         return self.hora_prev
     def getter_hora_real(self):
         return self.hora_real
+    def getter_comprobante(self):
+        return self.comprobante

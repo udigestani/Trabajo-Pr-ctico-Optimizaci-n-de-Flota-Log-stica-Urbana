@@ -1,6 +1,6 @@
 from comprobante import Comprobante
 from articulo import Articulo
-from excepciones import EstadoInvalidoError
+from excepciones import EstadoInvalidoError, DatoInvalidoError
 from validaciones import Validaciones
 
 class Solicitud:
@@ -13,12 +13,6 @@ class Solicitud:
         self.comprobante = None
         Solicitud.curr_id += 1
         self.id = Solicitud.curr_id
-
-    def generar_comprobante(self, fecha_Hora, receptor, monto):
-        if self.comprobante:
-            raise EstadoInvalidoError("generar_comprobante", "ya tiene comprobante")
-        self.comprobante = Comprobante(self, fecha_Hora, receptor, monto)
-        return self.comprobante
     
     def __str__(self):
         return f"Solicitud {self.id} hacia {self.destino} (Ventana: {self.ventana_inicio.strftime('%H:%M')}-{self.ventana_fin.strftime('%H:%M')})"
@@ -35,6 +29,10 @@ class Solicitud:
 
     def getter_articulos(self):
         return self.articulos
+    def getter_peso(self):
+        return sum(map(lambda art: art.getter_peso(), self.articulos))
+    def getter_volumen(self):
+        return sum(map(lambda art: art.getter_volumen(), self.articulos))
     def getter_id(self):
         return self.id
     def getter_destino(self):
@@ -46,10 +44,21 @@ class Solicitud:
     def getter_viaje(self):
         return self.viaje
     def setter_viaje(self, viaje):
-        self.viaje = viaje
+        from viaje import Viaje
+        if not (viaje is None or isinstance(viaje, Viaje)):
+            raise DatoInvalidoError(f"El viaje {viaje} debe ser de clase Viaje o None")
+        self.viaje = viaje 
         return None
     def getter_comprobante(self):
         return self.comprobante
     def setter_comprobante(self, comprobante):
+        if self.comprobante:
+            raise EstadoInvalidoError("generar_comprobante", "la solicitud ya tiene comprobante")
+        if not (comprobante is None or isinstance(comprobante, Comprobante)):
+            raise DatoInvalidoError("El comprobante debe ser de clase Comprobante o None")
         self.comprobante = comprobante
         return None
+    def esta_entregada(self):
+        return self.comprobante is not None
+    def esta_asignada(self):
+        return self.viaje is not None and self.viaje.getter_estado() in {"EN_CURSO", "PLANIFICADO"}

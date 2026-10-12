@@ -8,7 +8,6 @@ from pila import Pila
 from politicaordenamiento import Vecinos, VentanasTiempo
 from validaciones import Validaciones
 from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, RutaIncompletaError, TransicionIlegalError
-from functools import reduce
 from itertools import chain
 
 class Viaje:
@@ -109,12 +108,12 @@ class Viaje:
         Validaciones.validar_instancia(nueva_solicitud, clase = Solicitud, nombre = "solicitud")
         if self.estado != "PLANIFICADO":
             raise EstadoInvalidoError("agregar_solicitud", self.estado)
-        viaje_anterior = nueva_solicitud.getter_viaje()
-        if viaje_anterior is not None and (viaje_anterior.getter_estado() in ("PLANIFICADO", "EN_CURSO") or nueva_solicitud.getter_comprobante() is not None):
+        if nueva_solicitud in self.solicitudes or nueva_solicitud.esta_asignada() or nueva_solicitud.esta_entregada():
             raise SolicitudDuplicadaError(nueva_solicitud.getter_id())
-        articulos = nueva_solicitud.getter_articulos()
-        peso = reduce(lambda x, y: x + y, map(lambda a: a.getter_peso(), articulos), self.peso_total)
-        volumen = reduce(lambda x, y: x + y, map(lambda a: a.getter_volumen(), articulos), self.volumen_total)
+        if nueva_solicitud.getter_destino() == self.deposito:
+            raise DatoInvalidoError(f"El destino de la solicitud {nueva_solicitud.getter_id()} no puede ser el depósito ({self.deposito})")
+        peso = self.peso_total + nueva_solicitud.getter_peso()
+        volumen = self.volumen_total + nueva_solicitud.getter_volumen()
         if peso > self.transporte.getter_peso_max():
             raise ExcesoPesoError(self.transporte.getter_peso_max(), peso)
         elif volumen > self.transporte.getter_volumen():
@@ -133,9 +132,8 @@ class Viaje:
         if self.historial_solicitudes.esVacia():
             raise ViajeVacioError("Viaje Vacio: No hay solicitudes para deshacer")
         solicitud = self.historial_solicitudes.desapilar()
-        articulos = solicitud.getter_articulos()
-        self.peso_total -= sum(map(lambda a: a.getter_peso(), articulos))
-        self.volumen_total -= sum(map(lambda a: a.getter_volumen(), articulos))
+        self.peso_total -= solicitud.getter_peso()
+        self.volumen_total -= solicitud.getter_volumen()
         self.solicitudes.remove(solicitud)
         solicitud.setter_viaje(None)
         return solicitud
