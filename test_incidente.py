@@ -127,7 +127,7 @@ def test_incidente_invalido_id(mock_validaciones, afectado):
         Incidente("ROBO", FECHA, "Caja rota", afectado)
     assert Incidente.curr_id == 0
 
-# Trazabilidad: README regla 12 -> afectado puede ser una solicitud o el transporte del viaje
+# Afectado puede ser Solicitud o Transporte
 def test_incidente_afectadoEsTransporte(mocker):
     transporte = mocker.Mock(spec=Transporte)
     incidente = Incidente("RETRASO", FECHA, "Pinchadura", transporte)
@@ -138,7 +138,6 @@ def test_incidente_afectadoEsSolicitud(mocker):
     incidente = Incidente("AUSENTE", FECHA, "Nadie en casa", solicitud)
     assert incidente.getter_afectado() is solicitud
 
-# Un incidente no cambia por sí solo la planificación
 def test_incidente_noModificaAfectado(mock_validaciones, afectado):
     Incidente("DAÑO", FECHA, "Caja rota", afectado)
     assert afectado.method_calls == []

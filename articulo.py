@@ -15,6 +15,8 @@ class Articulo:
         return self.volumen
     def getter_id(self):
         return self.id
+    def getter_descripcion(self):
+        return self.descripcion
 
     def __str__(self):
         return f"Artículo {self.id}: {self.descripcion} ({self.peso}kg, {self.volumen}m³)"
