@@ -220,17 +220,24 @@ def test_fecha_tipoInvalido():
 # Funcionamiento normal
 def test_ventana_ok(mock_fecha):
     inicio, fin = Validaciones.validar_ventana(INICIO, FIN)
+    mock_fecha.assert_any_call(INICIO, nombre = "fecha de la ventana")
+    mock_fecha.assert_any_call(FIN, nombre = "fecha de la ventana")
     assert inicio == INICIO
     assert fin == FIN
     assert Validaciones.validar_ventana(INICIO, INICIO) == (INICIO, INICIO)
-    mock_fecha.assert_called_with(INICIO, INICIO, nombre = "fecha de la ventana")
+    Validaciones.validar_ventana(INICIO, FIN, nombre_inicio = "fecha de salida", nombre_fin = "fecha de entrega")
+    mock_fecha.assert_any_call(INICIO, nombre = "fecha de salida")
+    mock_fecha.assert_any_call(FIN, nombre = "fecha de entrega")
 def test_ventana_fechaInvalida_sePropaga(mock_fecha):
     mock_fecha.side_effect = TypeError("La fecha de la ventana None debe ser un objeto datetime")
     with pytest.raises(TypeError, match = "La fecha de la ventana None debe ser un objeto datetime"):
         Validaciones.validar_ventana(INICIO, None)
+def test_ventana_fechaInvalida_real():
+    with pytest.raises(TypeError, match = "La fecha de entrega None debe ser un objeto datetime"):
+        Validaciones.validar_ventana(INICIO, None, nombre_inicio = "fecha de salida", nombre_fin = "fecha de entrega")
 def test_ventana_ventanaInvertida(mock_fecha):
-    with pytest.raises(VentanaInvalidaError):
-        Validaciones.validar_ventana(FIN, INICIO)
+    with pytest.raises(VentanaInvalidaError, match = "La fecha de salida .* a la fecha de entrega"):
+        Validaciones.validar_ventana(FIN, INICIO, nombre_inicio = "fecha de salida", nombre_fin = "fecha de entrega")
     with pytest.raises(DatoInvalidoError):
         Validaciones.validar_ventana(FIN, INICIO)
 

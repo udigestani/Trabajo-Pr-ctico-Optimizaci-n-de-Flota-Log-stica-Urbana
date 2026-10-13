@@ -83,7 +83,7 @@ def test_viaje_vacio(viaje_base):
 def test_entrega_hora_anterior_a_salida(viaje_base):
     viaje_base.crear_solicitud("Destino A", datetime(2024, 6, 1, 9, 0), datetime(2024, 6, 1, 12, 0), Articulo("Producto", 10, 1))
     viaje_base.iniciar_viaje()
-    with pytest.raises(DatoInvalidoError, match="La hora de entrega no puede ser anterior al horario de salida del viaje"):
+    with pytest.raises(DatoInvalidoError, match="La fecha de salida del viaje .* a la fecha de entrega"):
         viaje_base.registrar_entrega(datetime(2024, 6, 1, 8, 0), "RECEPTOR", 100)
 def test_sin_paradas_pendientes(viaje_base):
     viaje_base.setter_estado("EN_CURSO")

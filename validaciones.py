@@ -43,10 +43,11 @@ class Validaciones:
         return Validaciones._resultado(fechas)
 
     @staticmethod
-    def validar_ventana(inicio, fin):
-        Validaciones.validar_fecha(inicio, fin, nombre = "fecha de la ventana")
+    def validar_ventana(inicio, fin, nombre_inicio = None, nombre_fin = None):
+        Validaciones.validar_fecha(inicio, nombre = nombre_inicio or "fecha de la ventana")
+        Validaciones.validar_fecha(fin, nombre = nombre_fin or "fecha de la ventana")
         if inicio > fin:
-            raise VentanaInvalidaError(inicio, fin)
+            raise VentanaInvalidaError(inicio, fin, nombre_inicio, nombre_fin)
         return inicio, fin
 
     @staticmethod

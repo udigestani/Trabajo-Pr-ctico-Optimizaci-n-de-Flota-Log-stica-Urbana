@@ -9,8 +9,11 @@ class DNIInvalidoError(DatoInvalidoError):
     def __init__(self, dni):
         super().__init__(f"El DNI {dni} ya está registrado")
 class VentanaInvalidaError(DatoInvalidoError):
-    def __init__(self, inicio, fin):
-        super().__init__(f"El inicio de la ventana ({inicio}) debe ser anterior al fin ({fin})")
+    def __init__(self, inicio, fin, nombre_inicio = None, nombre_fin = None):
+        if nombre_inicio is None or nombre_fin is None:
+            super().__init__(f"El inicio de la ventana ({inicio}) debe ser anterior al fin ({fin})")
+        else:
+            super().__init__(f"La {nombre_inicio} ({inicio}) debe ser anterior a la {nombre_fin} ({fin})")
 class SolicitudDuplicadaError(DatoInvalidoError):
     def __init__(self, solicitud_id):
         super().__init__(f"Solicitud duplicada: La solicitud {solicitud_id} ya pertenece a un viaje planificado o en curso")

@@ -42,8 +42,11 @@ def test_familias_independientes():
 # Mensajes de las excepciones que llevan datos
 def test_mensaje_dniInvalido():
     assert str(DNIInvalidoError(12345678)) == "El DNI 12345678 ya está registrado"
-def test_mensaje_ventanaInvalida():
+def test_mensaje_ventanaInvalida_sinNombre():
     assert str(VentanaInvalidaError("09:00", "08:00")) == "El inicio de la ventana (09:00) debe ser anterior al fin (08:00)"
+    assert str(VentanaInvalidaError("09:00", "08:00", nombre_inicio = "fecha de salida")) == "El inicio de la ventana (09:00) debe ser anterior al fin (08:00)"
+def test_mensaje_ventanaInvalida_conNombre():
+    assert str(VentanaInvalidaError("09:00", "08:00", "fecha de salida del viaje", "fecha de entrega")) == "La fecha de salida del viaje (09:00) debe ser anterior a la fecha de entrega (08:00)"
 def test_mensaje_solicitudDuplicada():
     assert str(SolicitudDuplicadaError(7)) == "Solicitud duplicada: La solicitud 7 ya pertenece a un viaje planificado o en curso"
 def test_mensaje_excesoPeso():

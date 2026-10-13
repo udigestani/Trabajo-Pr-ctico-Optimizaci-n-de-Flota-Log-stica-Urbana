@@ -29,10 +29,12 @@ class Viaje:
         Viaje.curr_id += 1
         self.id = Viaje.curr_id
 
+    def _validar_estado(self, accion, estado_requerido):
+        if self.estado != estado_requerido:
+            raise EstadoInvalidoError(accion, self.estado)
 
     def crear_solicitud(self, destino, ventana_inicio, ventana_fin, *articulos):
-        if self.estado != "PLANIFICADO":
-            raise EstadoInvalidoError("crear_solicitud", self.estado)
+        self._validar_estado("crear_solicitud", "PLANIFICADO", )
         nueva_solicitud = Solicitud(destino, ventana_inicio, ventana_fin, *articulos)
         self.agregar_solicitud(nueva_solicitud)
         return nueva_solicitud
@@ -112,8 +114,7 @@ class Viaje:
 
     def agregar_solicitud(self, nueva_solicitud):
         Validaciones.validar_instancia(nueva_solicitud, clase = Solicitud, nombre = "solicitud")
-        if self.estado != "PLANIFICADO":
-            raise EstadoInvalidoError("agregar_solicitud", self.estado)
+        self._validar_estado("agregar_solicitud", "PLANIFICADO")
         if nueva_solicitud in self.solicitudes or nueva_solicitud.esta_asignada() or nueva_solicitud.esta_entregada():
             raise SolicitudDuplicadaError(nueva_solicitud.getter_id())
         if nueva_solicitud.getter_destino() == self.deposito:
@@ -133,8 +134,7 @@ class Viaje:
         return None
 
     def deshacer_ultima_solicitud(self):
-        if self.estado != "PLANIFICADO":
-            raise EstadoInvalidoError("deshacer_ultima_solicitud", self.estado)
+        self._validar_estado("deshacer_ultima_solicitud", "PLANIFICADO")
         if self.historial_solicitudes.esVacia():
             raise ViajeVacioError("Viaje Vacio: No hay solicitudes para deshacer")
         solicitud = self.historial_solicitudes.desapilar()
@@ -172,8 +172,7 @@ class Viaje:
 
     # DESDE ACÁ EL VIAJE ESTÁ INICIADO
     def iniciar_viaje(self):
-        if self.estado != "PLANIFICADO":
-            raise EstadoInvalidoError("iniciar_viaje", self.estado)
+        self._validar_estado("iniciar_viaje", "PLANIFICADO")
         if not self.solicitudes:
             raise ViajeVacioError("Viaje Vacio: El viaje aún no tiene solicitudes")
         
@@ -197,13 +196,12 @@ class Viaje:
         self.estado = "EN_CURSO"
 
     def registrar_entrega(self, hora_real, receptor, monto):
-        if self.estado != "EN_CURSO":
-            raise EstadoInvalidoError("registrar_entrega", self.estado)
-        Validaciones.validar_fecha(hora_real, nombre = "hora de entrega")
-        if hora_real < self.horario:
-            raise DatoInvalidoError("La hora de entrega no puede ser anterior al horario de salida del viaje")
-        if self.paradas_resueltas and hora_real < self.paradas_resueltas[-1].getter_hora_real():
-            raise DatoInvalidoError("La hora de entrega no puede ser anterior a la de la parada previa")
+        self._validar_estado("registrar_entrega", "EN_CURSO")
+        if self.paradas_resueltas:
+            inicio = self.paradas_resueltas[-1].getter_hora_real()
+            Validaciones.validar_ventana(inicio, hora_real, nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha de entrega")
+        else:
+            Validaciones.validar_ventana(self.horario, hora_real, nombre_inicio = "fecha de salida del viaje", nombre_fin = "fecha de entrega")
         if self.paradas.esVacia():
             raise SinParadasPendientesError("registrar_entrega")
         parada_pendiente = self.paradas.frente()
@@ -214,13 +212,12 @@ class Viaje:
         return comprobante
 
     def registrar_incidente(self, tipo, fecha, descripcion, **detalles):
-        if self.estado != "EN_CURSO":
-            raise EstadoInvalidoError("registrar_incidente", self.estado)
-        Validaciones.validar_fecha(fecha, nombre = "fecha del incidente")
-        if fecha < self.horario:
-            raise DatoInvalidoError("La fecha del incidente no puede ser anterior al horario de salida del viaje")
-        if self.paradas_resueltas and fecha < self.paradas_resueltas[-1].getter_hora_real():
-            raise DatoInvalidoError("La fecha del incidente no puede ser anterior a la de la parada previa")
+        self._validar_estado("registrar_incidente", "EN_CURSO")
+        if self.paradas_resueltas:
+            inicio = self.paradas_resueltas[-1].getter_hora_real()
+            Validaciones.validar_ventana(inicio, fecha, nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha del incidente")
+        else:
+            Validaciones.validar_ventana(self.horario, fecha, nombre_inicio = "fecha de salida del viaje", nombre_fin = "fecha del incidente")
         if self.paradas.esVacia():
             raise SinParadasPendientesError("registrar_incidente")
         parada_pendiente = self.paradas.frente()
@@ -234,8 +231,7 @@ class Viaje:
         return incidente
 
     def finalizar_viaje(self):
-        if self.estado != "EN_CURSO":
-            raise EstadoInvalidoError("finalizar_viaje", self.estado)
+        self._validar_estado("finalizar_viaje", "EN_CURSO")
         if not self.paradas.esVacia():
             raise ViajeIncompletoError(self.paradas.get_longitud())
         self.estado = "FINALIZADO"
