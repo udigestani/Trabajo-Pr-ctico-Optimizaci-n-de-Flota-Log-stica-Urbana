@@ -38,7 +38,7 @@ def test_solicitante_ok(solicitante):
     assert isinstance(solicitante, Persona)
     assert not isinstance(solicitante, Administrador)
     assert issubclass(Solicitante, Persona)
-    assert Persona.getter_dnis_registrados() == {87654321: solicitante}
+    assert Persona.getter_dnis_registrados() == {87654321}
 
 # DNIInvalidoError si el DNI ya está registrado
 def test_solicitante_dniRepetido():

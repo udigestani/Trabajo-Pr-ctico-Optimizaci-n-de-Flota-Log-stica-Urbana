@@ -11,7 +11,7 @@ def limpiar_dnis():
 def mock_validaciones(mocker):
     mock = mocker.patch("persona.Validaciones")
     mock.validar_str.side_effect = lambda valor, nombre = "valor": valor
-    mock.validar_dni.side_effect = lambda dni, registrados = (): dni
+    mock.validar_dni.side_effect = lambda dni, registrados = set(): dni
     mock.validar_digitos.side_effect = lambda valor, cantidades, nombre = "valor": valor
     return mock
 
@@ -36,8 +36,7 @@ def test_persona_ok(persona_base):
     assert persona_base.getter_nombre() == "Juan"
     assert persona_base.getter_dni() == 12345678
     assert persona_base.getter_telefono() == 1123456789
-    assert Persona.getter_dnis_registrados() == {12345678: persona_base}
-    assert Persona.getter_dnis_registrados()[12345678] is persona_base
+    assert Persona.getter_dnis_registrados() == {12345678}
 # Metodos magicos
 def test_persona_metodosMagicos(persona_base, mock_persona_igual, mock_persona_distinta):
     assert str(persona_base) == "Persona de nombre Juan y DNI: 12345678"
@@ -58,11 +57,11 @@ def test_persona_hash(persona_base):
 def test_persona_variasPersonas(persona_base, mock_validaciones):
     persona1 = Persona("Manuel", 24680000, 1123456789)
     persona2 = Persona("Massimo", 87654321, 1198765432)
-    assert Persona.getter_dnis_registrados() == {12345678: persona_base, 24680000: persona1, 87654321: persona2}
+    assert Persona.getter_dnis_registrados() == {12345678, 24680000, 87654321}
     Persona.getter_dnis_registrados().clear()
-    assert Persona.dnis_registrados != {}
+    assert Persona.dnis_registrados != set()
     Persona.limpiar_dnis_registrados()
-    assert Persona.dnis_registrados == {}
+    assert Persona.dnis_registrados == set()
 
 # Herencia
 def test_persona_herencia(persona_base):
@@ -93,7 +92,7 @@ def test_persona_nombreInvalido(mock_validaciones):
     mock_validaciones.validar_str.side_effect = DatoInvalidoError("El nombre no debe estar vacío")
     with pytest.raises(DatoInvalidoError, match = "El nombre no debe estar vacío"):
         Persona("     ", 12345678, 1123456789)
-    assert Persona.dnis_registrados == {}
+    assert Persona.dnis_registrados == set()
     mock_validaciones.validar_dni.assert_not_called()
     mock_validaciones.validar_digitos.assert_not_called()
 
@@ -101,33 +100,37 @@ def test_persona_nombreTipoInvalido(mock_validaciones):
     mock_validaciones.validar_str.side_effect = TypeError("El nombre 5 debe ser una cadena str")
     with pytest.raises(TypeError, match = "debe ser una cadena str"):
         Persona(5, 12345678, 1123456789)
-    assert Persona.dnis_registrados == {}
+    assert Persona.dnis_registrados == set()
 
 def test_persona_dniInvalido(mock_validaciones):
     mock_validaciones.validar_dni.side_effect = DatoInvalidoError("El DNI 123 debe ser un número entero positivo de 7 o 8 dígitos")
     with pytest.raises(DatoInvalidoError, match = "El DNI 123 debe ser"):
         Persona("Manuel", 123, 1123456789)
-    assert Persona.dnis_registrados == {}
+    assert Persona.dnis_registrados == set()
     mock_validaciones.validar_digitos.assert_not_called()
 
 # Dni duplicado mock
 def test_persona_dniDuplicado(persona_base, mock_validaciones):
     mock_validaciones.validar_dni.side_effect = DNIInvalidoError(12345678)
     with pytest.raises(DNIInvalidoError, match = "El DNI 12345678 ya está registrado"):
-        Persona("Uriel", 12345678, 1123456789)
-    assert Persona.dnis_registrados[12345678] is persona_base
-    assert "Uriel" not in map(lambda per: per.nombre, Persona.dnis_registrados.values())
+        noExiste = None
+        noExiste = Persona("Uriel", 12345678, 1123456789)
+    assert persona_base.getter_dni() == 12345678
+    assert Persona.getter_dnis_registrados() == {12345678}
+    assert noExiste is None
+
 # Dni duplicado real 
 def test_persona_dniDuplicado_real():
     original = Persona("Juan", 12345678, 1123456789)
     with pytest.raises(DNIInvalidoError, match = "El DNI 12345678 ya está registrado"):
-        Persona("Uriel", 12345678, 1198765432)
-    assert Persona.getter_dnis_registrados() == {12345678: original}
-    assert Persona.dnis_registrados[12345678] is original
-    assert Persona.dnis_registrados[12345678].getter_nombre() == "Juan"
+        noExiste = None
+        noExiste = Persona("Uriel", 12345678, 1198765432)
+    assert original.getter_dni() == 12345678
+    assert Persona.getter_dnis_registrados() == {12345678}
+    assert noExiste is None
 
 def test_persona_telefonoInvalido(mock_validaciones):
     mock_validaciones.validar_digitos.side_effect = DatoInvalidoError("El teléfono 1234 debe ser un número entero positivo de 10 dígitos")
     with pytest.raises(DatoInvalidoError, match = "El teléfono 1234 debe ser"):
         Persona("Manuel", 12345678, 1234)
-    assert Persona.dnis_registrados == {}
+    assert Persona.dnis_registrados == set()

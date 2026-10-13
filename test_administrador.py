@@ -35,7 +35,7 @@ def test_admin_ok(admin):
     assert isinstance(admin, Administrador)
     assert isinstance(admin, Persona)
     assert issubclass(Administrador, Persona)
-    assert Persona.getter_dnis_registrados() == {12345678: admin}
+    assert Persona.getter_dnis_registrados() == {12345678}
     assert str(admin) == "Persona de nombre Juan y DNI: 12345678"
     assert repr(admin) == "<Persona Juan - 12345678>"
 

@@ -2,12 +2,12 @@ from viaje import Viaje
 from validaciones import Validaciones
 
 class Persona:
-    dnis_registrados = {}
+    dnis_registrados = set()
     def __init__(self, nombre, dni, telefono):
         self.nombre = Validaciones.validar_str(nombre, nombre = "nombre")
         self.dni = Validaciones.validar_dni(dni, Persona.dnis_registrados)
         self.telefono = Validaciones.validar_digitos(telefono, 10, "teléfono")
-        Persona.dnis_registrados[self.dni] = self
+        Persona.dnis_registrados.add(self.dni)
 
     def getter_nombre(self):
         return self.nombre

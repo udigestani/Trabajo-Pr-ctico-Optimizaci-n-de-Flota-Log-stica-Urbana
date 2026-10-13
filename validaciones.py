@@ -63,10 +63,10 @@ class Validaciones:
         raise DatoInvalidoError(f"El {nombre} {valor} debe tener {opciones} dígitos")
 
     @staticmethod
-    def validar_dni(dni, registrados = ()):
+    def validar_dni(dni, registrados = set()):
         Validaciones.validar_digitos(dni, (7, 8), "DNI")
         if registrados is None:
-            registrados = ()
+            registrados = set()
         if dni in registrados:
             raise DNIInvalidoError(dni)
         return dni
