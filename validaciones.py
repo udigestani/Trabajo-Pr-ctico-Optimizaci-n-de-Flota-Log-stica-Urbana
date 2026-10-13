@@ -17,6 +17,7 @@ class Validaciones:
                 raise TypeError(f"El {nombre} {valor} debe ser una cadena str")
             if not valor.strip():
                 raise DatoInvalidoError(f"El {nombre} no debe estar vacío")
+        valores = tuple(map(lambda valor:valor.strip(), valores))
         return Validaciones._resultado(valores)
 
     @staticmethod
@@ -52,10 +53,14 @@ class Validaciones:
     def validar_digitos(valor, cantidades, nombre = "valor"):
         if isinstance(cantidades, int):
             cantidades = (cantidades,)
-        if isinstance(valor, int) and not isinstance(valor, bool) and valor > 0 and len(str(valor)) in cantidades:
+        if not isinstance(valor, int) or isinstance(valor, bool):
+            raise TypeError(f"El {nombre} {valor} debe ser un objeto int")
+        if valor <= 0:
+            raise DatoInvalidoError(f"El {nombre} {valor} debe ser positivo")
+        if len(str(valor)) in cantidades:
             return valor
         opciones = " o ".join(str(c) for c in cantidades)
-        raise DatoInvalidoError(f"El {nombre} {valor} debe ser un número entero positivo de {opciones} dígitos")
+        raise DatoInvalidoError(f"El {nombre} {valor} debe tener {opciones} dígitos")
 
     @staticmethod
     def validar_dni(dni, registrados = ()):
@@ -71,6 +76,9 @@ class Validaciones:
         Validaciones._resultado(valores)
         if isinstance(opciones, str):
             opciones = tuple(opcion.strip() for opcion in opciones.split(","))
+        for opcion in opciones:
+            if not isinstance(opcion, str):
+                raise TypeError(f"Las opciones de {nombre} deben ser cadenas str, pero {opcion} no lo es")
         for valor in valores:
             if not isinstance(valor, str):
                 raise TypeError(f"El {nombre} {valor} debe ser una cadena str")
