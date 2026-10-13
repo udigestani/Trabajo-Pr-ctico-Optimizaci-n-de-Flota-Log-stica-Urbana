@@ -98,10 +98,16 @@ class Viaje:
         self.estado = Validaciones.validar_en(estado, opciones = "PLANIFICADO, EN_CURSO, FINALIZADO", nombre = "estado del viaje")
         return None
     def setter_peso(self, peso):
-        self.peso_total = Validaciones.validar_numero(peso, cero = True, nombre = "peso")
+        peso = Validaciones.validar_numero(peso, cero = True, nombre = "peso")
+        if peso > self.transporte.getter_peso_max():
+            raise ExcesoPesoError(self.transporte.getter_peso_max(), peso)
+        self.peso_total = peso
         return None
     def setter_volumen(self, volumen):
-        self.volumen_total = Validaciones.validar_numero(volumen, cero = True, nombre = "volumen")
+        volumen = Validaciones.validar_numero(volumen, cero = True, nombre = "volumen")
+        if volumen > self.transporte.getter_volumen():
+            raise ExcesoVolumenError(self.transporte.getter_volumen(), volumen)
+        self.volumen_total = volumen
         return None
 
     def agregar_solicitud(self, nueva_solicitud):
