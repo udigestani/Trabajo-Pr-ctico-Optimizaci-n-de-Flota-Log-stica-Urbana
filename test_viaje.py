@@ -167,8 +167,6 @@ def mock_validar_recorrido(mocker):
 @pytest.fixture
 def viaje_cargado(viaje, solicitud_a, solicitud_b):
     viaje.solicitudes = [solicitud_a, solicitud_b]
-    viaje.peso_total = 350
-    viaje.volumen_total = 6
     viaje.historial_solicitudes.apilar(solicitud_a)
     viaje.historial_solicitudes.apilar(solicitud_b)
     return viaje
@@ -239,8 +237,8 @@ def test_viaje_ok(viaje, transporte, matriz):
     assert viaje.horario == HORARIO
     assert viaje.matriz is matriz
     assert viaje.estado == "PLANIFICADO"
-    assert viaje.peso_total == 0
-    assert viaje.volumen_total == 0
+    assert viaje.getter_peso() == 0
+    assert viaje.getter_volumen() == 0
     assert viaje.solicitudes == []
     assert viaje.incidentes == []
     assert viaje.paradas.esVacia()
@@ -373,16 +371,16 @@ def test_agregarSolicitud_ok(viaje, solicitud_a, solicitud_b, mock_validaciones,
     mock_validar_estado.assert_called_once_with(viaje, "agregar_solicitud", "PLANIFICADO")
     mock_validar_recorrido.assert_called_once_with(viaje, [solicitud_a])
     mock_validaciones.validar_instancia.assert_any_call(solicitud_a, clase = Solicitud, nombre = "solicitud")
-    solicitud_a.getter_peso.assert_called_once()
-    solicitud_a.getter_volumen.assert_called_once()
+    assert solicitud_a.getter_peso.call_count == 2
+    assert solicitud_a.getter_volumen.call_count == 2
     solicitud_a.setter_viaje.assert_called_once_with(viaje)
     # varias solicitudes
     viaje.agregar_solicitud(solicitud_b)
     assert viaje.getter_solicitudes() == [solicitud_a, solicitud_b]
     assert viaje.getter_peso() == 350
     assert viaje.getter_volumen() == 6
-    solicitud_a.getter_peso.assert_called_once()
-    solicitud_a.getter_volumen.assert_called_once()
+    assert solicitud_a.getter_peso.call_count == 4
+    assert solicitud_a.getter_volumen.call_count == 4
     solicitud_b.setter_viaje.assert_called_once_with(viaje)
     mock_validar_estado.assert_any_call(viaje, "agregar_solicitud", "PLANIFICADO")
     mock_validar_recorrido.assert_any_call(viaje, [solicitud_a, solicitud_b])
@@ -543,7 +541,6 @@ def test_validarRecorrido_ok(viaje, matriz, solicitud_a, solicitud_b, mock_agreg
     assert viaje.validar_recorrido([]) is True
     matriz.obtener_distancia.assert_not_called()
     viaje.solicitudes = [solicitud_a]
-    viaje.peso_total = solicitud_a.getter_peso()
     matriz.obtener_distancia.side_effect = [15, 10]
     # Llega 9:30 a Destino A. Sale 9:40 y llega 10:00 a Destino B
     solicitud_a.getter_ventana_fin.return_value = hora(9, 30)
@@ -647,52 +644,6 @@ def test_viaje_setterEstado_transicionIlegal(viaje, mock_validaciones):
         viaje.setter_estado("EN_CURSO")
     assert viaje.getter_estado() == "FINALIZADO"
     assert mock_validaciones.validar_en.call_count == 4
-
-
-# ---------- setter_peso ----------
-# Funcionamiento normal
-def test_viaje_setterPeso_ok(viaje, mock_validaciones, transporte):
-    assert viaje.setter_peso(100) is None
-    assert viaje.getter_peso() == 100
-    mock_validaciones.validar_numero.assert_called_once_with(100, cero = True, nombre = "peso")
-    transporte.getter_peso_max.assert_called_once()
-# peso invalido se propaga
-def test_viaje_setterPeso_invalido_sePropaga(viaje, mock_validaciones, transporte):
-    viaje.peso_total = 3
-    mock_validaciones.validar_numero.side_effect = DatoInvalidoError("El peso -5 debe ser finito y no negativo")
-    with pytest.raises(DatoInvalidoError, match = "El peso -5 debe ser finito y no negativo"):
-        viaje.setter_peso(-5)
-    assert viaje.getter_peso() == 3
-    transporte.getter_peso_max.assert_not_called()
-# exceso de peso
-def test_viaje_setterPeso_excesoPeso(viaje, mock_validaciones, transporte):
-    viaje.peso_total = 3
-    with pytest.raises(ExcesoPesoError):
-        viaje.setter_peso(501)
-    assert viaje.getter_peso() == 3
-    assert transporte.getter_peso_max.call_count == 2
-# ---------- setter_volumen ----------
-# Funcionamiento normal
-def test_viaje_setterVolumen_ok(viaje, mock_validaciones, transporte):
-    assert viaje.setter_volumen(2.5) is None
-    assert viaje.getter_volumen() == 2.5
-    mock_validaciones.validar_numero.assert_called_once_with(2.5, cero = True, nombre = "volumen")
-    transporte.getter_volumen.assert_called_once()
-# volumen inválido se propaga
-def test_viaje_setterVolumen_invalido_sePropaga(viaje, mock_validaciones, transporte):
-    viaje.volumen_total = 1.2
-    mock_validaciones.validar_numero.side_effect = DatoInvalidoError("El volumen -1 debe ser finito y no negativo")
-    with pytest.raises(DatoInvalidoError, match = "El volumen -1 debe ser finito y no negativo"):
-        viaje.setter_volumen(-1)
-    assert viaje.getter_volumen() == 1.2
-    transporte.getter_volumen.assert_not_called()
-# exceso de volumen
-def test_viaje_setterVolumen_excesoVolumen(viaje, mock_validaciones, transporte):
-    viaje.volumen_total = 1.2
-    with pytest.raises(ExcesoVolumenError):
-        viaje.setter_volumen(9)
-    assert viaje.getter_volumen() == 1.2
-    assert transporte.getter_volumen.call_count == 2
 
 
 # ---------- ordenar_solicitudes ----------

@@ -20,8 +20,6 @@ class Viaje:
         self.matriz = Validaciones.validar_instancia(matriz, clase = MatrizDistancia, nombre = "matriz")
         self.estado = "PLANIFICADO"
 
-        self.peso_total = 0
-        self.volumen_total = 0
         self.solicitudes = []
         self.incidentes = []
         self.paradas = Cola()
@@ -71,9 +69,9 @@ class Viaje:
     def getter_estado(self):
         return self.estado
     def getter_peso(self):
-        return self.peso_total
+        return sum(map(lambda s: s.getter_peso(), self.solicitudes))
     def getter_volumen(self):
-        return self.volumen_total
+        return sum(map(lambda s: s.getter_volumen(), self.solicitudes))
     def getter_peso_max(self):
         return self.transporte.getter_peso_max()
     def getter_volumen_max(self):
@@ -96,18 +94,6 @@ class Viaje:
             raise TransicionIlegalError("El ciclo de un viaje es PLANIFICADO -> EN_CURSO -> FINALIZADO")
         self.estado = estado
         return None
-    def setter_peso(self, peso):
-        peso = Validaciones.validar_numero(peso, cero = True, nombre = "peso")
-        if peso > self.transporte.getter_peso_max():
-            raise ExcesoPesoError(self.transporte.getter_peso_max(), peso)
-        self.peso_total = peso
-        return None
-    def setter_volumen(self, volumen):
-        volumen = Validaciones.validar_numero(volumen, cero = True, nombre = "volumen")
-        if volumen > self.transporte.getter_volumen():
-            raise ExcesoVolumenError(self.transporte.getter_volumen(), volumen)
-        self.volumen_total = volumen
-        return None
 
     def agregar_solicitud(self, nueva_solicitud):
         Validaciones.validar_instancia(nueva_solicitud, clase = Solicitud, nombre = "solicitud")
@@ -116,15 +102,13 @@ class Viaje:
             raise SolicitudDuplicadaError(nueva_solicitud.getter_id())
         if nueva_solicitud.getter_destino() == self.deposito:
             raise DatoInvalidoError(f"El destino de la solicitud {nueva_solicitud.getter_id()} no puede ser el depósito ({self.deposito})")
-        peso = self.peso_total + nueva_solicitud.getter_peso()
-        volumen = self.volumen_total + nueva_solicitud.getter_volumen()
+        peso = self.getter_peso() + nueva_solicitud.getter_peso()
+        volumen = self.getter_volumen() + nueva_solicitud.getter_volumen()
         if peso > self.transporte.getter_peso_max():
             raise ExcesoPesoError(self.transporte.getter_peso_max(), peso)
         elif volumen > self.transporte.getter_volumen():
             raise ExcesoVolumenError(self.transporte.getter_volumen(), volumen)
         self.validar_recorrido([*self.solicitudes, nueva_solicitud])
-        self.peso_total = peso
-        self.volumen_total = volumen
         self.solicitudes.append(nueva_solicitud)
         self.historial_solicitudes.apilar(nueva_solicitud)
         nueva_solicitud.setter_viaje(self)
@@ -135,8 +119,6 @@ class Viaje:
         if self.historial_solicitudes.esVacia():
             raise ViajeVacioError("Viaje Vacio: No hay solicitudes para deshacer")
         solicitud = self.historial_solicitudes.desapilar()
-        self.peso_total -= solicitud.getter_peso()
-        self.volumen_total -= solicitud.getter_volumen()
         self.solicitudes.remove(solicitud)
         solicitud.setter_viaje(None)
         return solicitud

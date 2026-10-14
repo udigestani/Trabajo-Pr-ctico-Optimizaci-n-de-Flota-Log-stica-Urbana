@@ -63,7 +63,8 @@ def test_crearViaje_ok(admin, mock_transporte, mock_matriz, horario):
     assert viaje.matriz is mock_matriz
     assert viaje.estado == "PLANIFICADO"
     assert viaje.solicitudes == viaje.incidentes == viaje.paradas_resueltas == []
-    assert viaje.peso_total == 0
+    assert viaje.getter_peso() == 0
+    assert viaje.getter_volumen() == 0
 
 def test_crearViaje_dosViajes(admin, mock_transporte, mock_matriz, horario):
     viaje1 = admin.crear_viaje(mock_transporte, "Deposito", horario, mock_matriz)
