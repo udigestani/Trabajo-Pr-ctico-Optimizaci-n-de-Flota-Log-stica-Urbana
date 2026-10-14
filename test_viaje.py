@@ -595,17 +595,19 @@ def test_distanciaTotal_tramoFaltante_sePropaga(viaje_cargado, matriz):
 
 # A futuro: Costo total y el cálculo de impacto ambiental (delegado en transporte)
 # ---------- costo_total e impacto_ambiental ----------
-def test_costoTotal_ok(viaje_cargado, mock_distancia_total):
+def test_costoTotal_ok(viaje_cargado, mock_distancia_total, transporte):
     # 50 km * $2 / km + 2 paradas * $5 / parada = $110
     assert viaje_cargado.costo_total() == 110
+    transporte.getter_costo_km.assert_called_once_with()
+    transporte.getter_costo_parada.assert_called_once_with()
     mock_distancia_total.assert_called_once_with(viaje_cargado)
-def test_costoTotal_viajeVacio(viaje, mock_distancia_total):
+def test_costoTotal_viajeVacio(viaje, mock_distancia_total, transporte):
     mock_distancia_total.return_value = 0
     assert viaje.costo_total() == 0
 def test_impactoAmbiental_delegaEnElTransporte(viaje_cargado, transporte, mock_distancia_total):
     transporte.calcular_impacto_ambiental.return_value = 13.5
     assert viaje_cargado.impacto_ambiental() == 13.5
-    transporte.calcular_impacto_ambiental.assert_called_once_with(transporte, 50, 350)
+    transporte.calcular_impacto_ambiental.assert_called_once_with(50, 350)
 
 
 # ---------- setter_estado ----------

@@ -66,6 +66,14 @@ class Viaje:
             ubicacion = lugar
         distancia += self.matriz.obtener_distancia(ubicacion, self.deposito)
         return distancia
+
+    def costo_total(self):
+        costo_distancia = self.distancia_total() * self.transporte.getter_costo_km()
+        costo_paradas = len(self.solicitudes) * self.transporte.getter_costo_parada()
+        return costo_distancia + costo_paradas
+
+    def impacto_ambiental(self):
+        return self.transporte.calcular_impacto_ambiental(self.distancia_total(), self.getter_peso())
     def getter_estado(self):
         return self.estado
     def getter_peso(self):
