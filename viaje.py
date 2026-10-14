@@ -7,17 +7,18 @@ from cola import Cola
 from pila import Pila
 from politicaordenamiento import Vecinos, VentanasTiempo
 from validaciones import Validaciones
+from matrizdistancia import MatrizDistancia
 from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, RutaIncompletaError, TransicionIlegalError
 from itertools import chain
 
 class Viaje:
     curr_id = 0
-    def __init__(self, transporte, deposito, horario, matriz, estado = "PLANIFICADO"):
+    def __init__(self, transporte, deposito, horario, matriz):
         self.transporte = Validaciones.validar_instancia(transporte, clase = Transporte, nombre = "transporte")
         self.deposito = Validaciones.validar_str(deposito, nombre = "depósito")
         self.horario = Validaciones.validar_fecha(horario, nombre = "horario de salida del viaje")
-        self.matriz = self.validar_matriz(matriz)
-        self.estado = Validaciones.validar_en(estado, opciones = "PLANIFICADO, EN_CURSO, FINALIZADO", nombre = "estado del viaje")
+        self.matriz = Validaciones.validar_instancia(matriz, clase = MatrizDistancia, nombre = "matriz")
+        self.estado = "PLANIFICADO"
 
         self.peso_total = 0
         self.volumen_total = 0
@@ -34,15 +35,10 @@ class Viaje:
             raise EstadoInvalidoError(accion, self.estado)
 
     def crear_solicitud(self, destino, ventana_inicio, ventana_fin, *articulos):
-        self._validar_estado("crear_solicitud", "PLANIFICADO", )
+        self._validar_estado("crear_solicitud", "PLANIFICADO")
         nueva_solicitud = Solicitud(destino, ventana_inicio, ventana_fin, *articulos)
         self.agregar_solicitud(nueva_solicitud)
         return nueva_solicitud
-
-    @staticmethod
-    def validar_matriz(matriz):
-        from matrizdistancia import MatrizDistancia
-        return Validaciones.validar_instancia(matriz, clase = MatrizDistancia, nombre = "matriz")
 
     def validar_recorrido(self, recorrido_nuevo):
         horario = self.horario
@@ -125,7 +121,7 @@ class Viaje:
             raise ExcesoPesoError(self.transporte.getter_peso_max(), peso)
         elif volumen > self.transporte.getter_volumen():
             raise ExcesoVolumenError(self.transporte.getter_volumen(), volumen)
-        self.validar_recorrido(chain(self.solicitudes, (nueva_solicitud,)))
+        self.validar_recorrido([*self.solicitudes, nueva_solicitud])
         self.peso_total = peso
         self.volumen_total = volumen
         self.solicitudes.append(nueva_solicitud)
