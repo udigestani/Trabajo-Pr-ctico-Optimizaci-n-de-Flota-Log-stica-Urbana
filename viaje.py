@@ -91,9 +91,10 @@ class Viaje:
     def paradas_pendientes(self):
         return list(self.paradas)
     def setter_estado(self, estado):
+        estado = Validaciones.validar_en(estado, opciones = "PLANIFICADO, EN_CURSO, FINALIZADO", nombre = "estado del viaje")
         if self.estado == "FINALIZADO" or (self.estado == "EN_CURSO" and estado != "FINALIZADO") or (self.estado == "PLANIFICADO" and estado != "EN_CURSO"):
-            raise TransicionIlegalError(f"El ciclo de un viaje es PLANIFICADO -> EN_CURSO -> FINALIZADO")
-        self.estado = Validaciones.validar_en(estado, opciones = "PLANIFICADO, EN_CURSO, FINALIZADO", nombre = "estado del viaje")
+            raise TransicionIlegalError("El ciclo de un viaje es PLANIFICADO -> EN_CURSO -> FINALIZADO")
+        self.estado = estado
         return None
     def setter_peso(self, peso):
         peso = Validaciones.validar_numero(peso, cero = True, nombre = "peso")
