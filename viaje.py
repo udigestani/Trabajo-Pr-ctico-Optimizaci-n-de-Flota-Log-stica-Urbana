@@ -57,19 +57,23 @@ class Viaje:
         # llegada = horario + timedelta(hours=tiempo_hrs)
         return True
 
-    def distancia_total(self):
+    def distancia_total(self, orden = None):
+        if orden is None:
+            orden = self.solicitudes
         ubicacion = self.deposito
         distancia = 0
-        for solicitud in self.solicitudes:
+        for solicitud in orden:
             lugar = solicitud.getter_destino()
             distancia += self.matriz.obtener_distancia(ubicacion, lugar)
             ubicacion = lugar
         distancia += self.matriz.obtener_distancia(ubicacion, self.deposito)
         return distancia
 
-    def costo_total(self):
-        costo_distancia = self.distancia_total() * self.transporte.getter_costo_km()
-        costo_paradas = len(self.solicitudes) * self.transporte.getter_costo_parada()
+    def costo_total(self, orden = None):
+        if orden is None:
+            orden = self.solicitudes
+        costo_distancia = self.distancia_total(orden) * self.transporte.getter_costo_km()
+        costo_paradas = len(orden) * self.transporte.getter_costo_parada()
         return costo_distancia + costo_paradas
 
     def impacto_ambiental(self):
@@ -145,17 +149,30 @@ class Viaje:
         return hash(self.id)
 
     def ordenar_solicitudes(self):
+        opciones = {}
+        error_solicitudes = None
         try:
-            orden = Vecinos.sugerir_orden(self.deposito, self.solicitudes, self.matriz)
+            opciones[tuple(self.solicitudes)] = self.costo_total(self.solicitudes)
+        except RutaIncompletaError as error:
+            error_solicitudes = error
+        try:
+            orden = tuple(Vecinos.sugerir_orden(self.deposito, self.solicitudes, self.matriz))
             self.validar_recorrido(orden)
-            return orden
+            costo = self.costo_total(orden)
+            opciones[orden] = costo
         except (VentanaIncumplidaError, RutaIncompletaError):
-            try:
-                orden = VentanasTiempo.sugerir_orden(self.deposito, self.solicitudes, self.matriz)
-                self.validar_recorrido(orden)
-                return orden
-            except (VentanaIncumplidaError, RutaIncompletaError):
-                return self.solicitudes
+            pass
+        try:
+            orden = tuple(VentanasTiempo.sugerir_orden(self.deposito, self.solicitudes, self.matriz))
+            self.validar_recorrido(orden)
+            costo = self.costo_total(orden)
+            opciones[orden] = costo
+        except (VentanaIncumplidaError, RutaIncompletaError):
+            pass
+        if not opciones:
+            raise error_solicitudes
+        orden = min(opciones.keys(), key = lambda opcion: opciones[opcion])
+        return list(orden)
 
     # DESDE ACÁ EL VIAJE ESTÁ INICIADO
     def iniciar_viaje(self):
