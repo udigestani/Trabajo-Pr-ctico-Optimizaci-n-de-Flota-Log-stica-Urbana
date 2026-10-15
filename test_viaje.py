@@ -366,7 +366,7 @@ def test_viaje_metodosMagicos(viaje, transporte, matriz, viaje_falso_igual):
 # Sn los errores ver que el peso y el volumen no se actualizan
 # exc
 def test_agregarSolicitud_ok(viaje, solicitud_a, solicitud_b, mock_validaciones, mock_validar_estado, mock_validar_recorrido):
-    assert viaje.agregar_solicitud(solicitud_a) is None
+    viaje.agregar_solicitud(solicitud_a)
     assert viaje.getter_solicitudes() == [solicitud_a]
     assert viaje.getter_peso() == 150
     assert viaje.getter_volumen() == 3

@@ -42,6 +42,9 @@ class Transporte:
     def getter_tipo(self):
         return self.__class__.__name__
 
+    def serializar(self):
+        return [self.id, self.__class__.__name__, self.peso_max, self.volumen, self.velocidad, self.costo_km, self.costo_parada, self.factor_ambiental]
+
     def __str__(self):
         return f"{self.__class__.__name__} {self.id} (Max: {self.peso_max}kg, {self.volumen}m³)"
     def __repr__(self):

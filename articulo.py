@@ -18,6 +18,9 @@ class Articulo:
     def getter_descripcion(self):
         return self.descripcion
 
+    def serializar(self):
+        return [self.id, self.descripcion, self.peso, self.volumen]
+
     def __str__(self):
         return f"Artículo {self.id}: {self.descripcion} ({self.peso}kg, {self.volumen}m³)"
     def __repr__(self):

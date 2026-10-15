@@ -26,6 +26,9 @@ class Comprobante:
     def getter_monto(self):
         return self.monto
 
+    def serializar(self):
+        return [self.id, self.solicitud.getter_id(), self.fecha_hora, self.receptor, self.monto]
+
     def __str__(self):
         fecha_str = self.fecha_hora.strftime('%Y-%m-%d %H:%M')
         return f"Comprobante {self.id} | Solicitud {self.solicitud.getter_id()} | Recibió: {self.receptor} el {fecha_str} | Monto: ${self.monto}"

@@ -35,6 +35,9 @@ class Persona:
     def __hash__(self):
         return hash(self.dni)    
 
+    def serializar(self):
+        return [self.dni, self.nombre, self.telefono, self.__class__.__name__]
+
 class Administrador(Persona):
     def __init__(self, nombre, dni, telefono):
         super().__init__(nombre, dni, telefono)

@@ -26,4 +26,10 @@ class MatrizDistancia:
 
     def getter_distancias(self):
         return self.distancias.copy()
+
+    def serializar(self):
+        lista = []
+        for (origen, destino), km in self.distancias.items():
+            lista.append([origen, destino, km])
+        return lista
     

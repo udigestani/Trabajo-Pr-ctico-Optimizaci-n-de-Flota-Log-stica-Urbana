@@ -32,6 +32,10 @@ class Incidente:
     def getter_descripcion(self):
         return self.descripcion
 
+    def serializar(self):
+        detalles = ",".join(map(lambda par: f"{par[0]}={par[1]}", self.detalles.items()))
+        return [self.id, self.tipo, self.fecha, self.descripcion, self.afectado.__class__.__name__, self.afectado.id, detalles]
+
     def __str__(self):
         fecha_str = self.fecha.strftime('%H:%M')
         base = f"Incidente {self.id} [{self.tipo}] a las {fecha_str}: {self.descripcion}"

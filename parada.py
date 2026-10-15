@@ -29,6 +29,17 @@ class Parada:
         raise EstadoInvalidoError("generar_comprobante", self.estado)
 
 
+    def serializar(self):
+        if self.hora_real:
+            hora_real = self.hora_real
+        else:
+            hora_real = ""
+        if self.comprobante:
+            id_comprobante = self.comprobante.getter_id()
+        else:
+            id_comprobante = ""
+        return [self.id, self.orden, self.solicitud.getter_id(), self.hora_prev, hora_real, self.estado, id_comprobante]
+
     def __str__(self):
         hora = self.hora_prev.strftime('%H:%M')
         if self.hora_real:

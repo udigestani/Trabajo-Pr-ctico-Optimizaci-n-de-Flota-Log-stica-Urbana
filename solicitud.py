@@ -14,6 +14,17 @@ class Solicitud:
         Solicitud.curr_id += 1
         self.id = Solicitud.curr_id
     
+    def serializar(self):
+        if self.viaje:
+            id_viaje = self.viaje.getter_id()
+        else:
+            id_viaje = ""
+        if self.comprobante:
+            id_comprobante = self.comprobante.getter_id()
+        else:
+            id_comprobante = ""
+        return [self.id, self.destino, self.ventana_inicio, self.ventana_fin, ",".join(map(lambda x: str(x.id), self.articulos)), id_viaje, id_comprobante]
+
     def __str__(self):
         return f"Solicitud {self.id} hacia {self.destino} (Ventana: {self.ventana_inicio.strftime('%H:%M')}-{self.ventana_fin.strftime('%H:%M')})"
 

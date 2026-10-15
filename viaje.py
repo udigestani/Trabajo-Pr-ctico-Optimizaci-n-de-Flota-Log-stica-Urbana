@@ -9,7 +9,6 @@ from politicaordenamiento import Vecinos, VentanasTiempo
 from validaciones import Validaciones
 from matrizdistancia import MatrizDistancia
 from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, RutaIncompletaError, TransicionIlegalError
-from itertools import chain
 
 class Viaje:
     curr_id = 0
@@ -107,6 +106,9 @@ class Viaje:
         self.estado = estado
         return None
 
+    def serializar(self):
+        return [self.id, self.transporte.id, self.deposito, self.horario, self.estado, ",".join(map(lambda x: str(x.id), self.solicitudes)), ",".join(map(lambda x: str(x.id), self.incidentes)), ",".join(map(lambda x: str(x.id), self.paradas)), ",".join(map(lambda x: str(x.id), self.paradas_resueltas)), ",".join(map(lambda x: str(x.id), self.historial_solicitudes))]
+    
     def agregar_solicitud(self, nueva_solicitud):
         Validaciones.validar_instancia(nueva_solicitud, clase = Solicitud, nombre = "solicitud")
         self._validar_estado("agregar_solicitud", "PLANIFICADO")
