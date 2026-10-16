@@ -1,0 +1,3 @@
+id,id_transporte,deposito,horario,estado,solicitudes,incidentes,paradas,paradas_resueltas,historial_solicitudes,Viaje
+1,1,Deposito,2027-03-01 08:00:00,EN_CURSO,"1,2",,"1,2",,"1,2"
+2,2,Deposito,2027-03-01 09:00:00,PLANIFICADO,"3,4",,,,"3,4"

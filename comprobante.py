@@ -1,3 +1,4 @@
+from datetime import datetime
 from validaciones import Validaciones
 
 class Comprobante:
@@ -28,6 +29,22 @@ class Comprobante:
 
     def serializar(self):
         return [self.id, self.solicitud.getter_id(), self.fecha_hora, self.receptor, self.monto]
+
+    @classmethod
+    def deserializar(cls, archivo, contexto):
+        # Dicc {id: sol}
+        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto["Solicitud"]))
+        # Deserializamos los comprobantes
+        comprobantes = []
+        for fila in archivo[1:]:
+            if fila:
+                solicitud = dicc_solicitudes[int(fila[1])]
+                comprobante = cls(solicitud, datetime.fromisoformat(fila[2]), fila[3], float(fila[4]))
+                comprobante.id = int(fila[0])
+                solicitud.setter_comprobante(comprobante)
+                comprobantes.append(comprobante)
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda comp: comp.id, comprobantes))
+        return comprobantes
 
     def __str__(self):
         fecha_str = self.fecha_hora.strftime('%Y-%m-%d %H:%M')

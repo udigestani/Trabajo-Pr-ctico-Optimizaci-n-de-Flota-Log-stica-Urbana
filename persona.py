@@ -1,5 +1,6 @@
 from viaje import Viaje
 from validaciones import Validaciones
+from excepciones import DatoInvalidoError
 
 class Persona:
     dnis_registrados = set()
@@ -36,7 +37,19 @@ class Persona:
         return hash(self.dni)    
 
     def serializar(self):
-        return [self.dni, self.nombre, self.telefono, self.__class__.__name__]
+        return [self.__class__.__name__, self.nombre, self.dni, self.telefono]
+
+    @staticmethod
+    def deserializar(archivo, contexto = None):
+        clases = {"Persona": Persona, "Administrador": Administrador, "Solicitante": Solicitante}
+        personas = []
+        for fila in archivo[1:]:
+            if fila and fila[0] in clases:
+                cls = clases[fila[0]]
+                personas.append(cls(fila[1], int(fila[2]), int(fila[3])))
+            elif fila and fila[0] not in clases:
+                raise DatoInvalidoError(f"Clase de persona desconocida: {fila[0]}")
+        return personas
 
 class Administrador(Persona):
     def __init__(self, nombre, dni, telefono):

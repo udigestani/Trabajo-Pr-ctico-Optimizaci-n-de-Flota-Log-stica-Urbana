@@ -1,3 +1,4 @@
+from datetime import datetime
 from excepciones import EstadoInvalidoError
 from validaciones import Validaciones
 from comprobante import Comprobante
@@ -39,6 +40,26 @@ class Parada:
         else:
             id_comprobante = ""
         return [self.id, self.orden, self.solicitud.getter_id(), self.hora_prev, hora_real, self.estado, id_comprobante]
+
+    @classmethod
+    def deserializar(cls, archivo, contexto):
+        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto["Solicitud"]))
+        dicc_comprobantes = dict(map(lambda comp: (comp.id, comp), contexto["Comprobante"]))
+        paradas = []
+        for fila in archivo[1:]:
+            if fila:
+                hora_real = None
+                if fila[4]:
+                    hora_real = datetime.fromisoformat(fila[4])
+                parada = cls(int(fila[1]), dicc_solicitudes[int(fila[2])], datetime.fromisoformat(fila[3]), hora_real)
+                parada.id = int(fila[0])
+                if fila[6]:
+                    parada.comprobante = dicc_comprobantes[int(fila[6])]
+                if fila[5] != "PENDIENTE":
+                    parada.setter_estado(fila[5])
+                paradas.append(parada)
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda p: p.id, paradas))
+        return paradas
 
     def __str__(self):
         hora = self.hora_prev.strftime('%H:%M')

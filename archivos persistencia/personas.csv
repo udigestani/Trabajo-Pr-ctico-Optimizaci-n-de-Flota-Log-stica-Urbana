@@ -1,6 +1,5 @@
-dni,nombre,telefono,clase
-47348001,Uriel,1178787878,Solicitante
-47348002,Juan,1178787872,Solicitante
-47348003,Massimo,1178787871,Administrador
-47348004,Manuel,1178787870,Administrador
-47348005,Bruno,1178787879,Administrador
+clase,nombre,dni,telefono,Persona
+Solicitante,Uriel,47348001,1178787878
+Solicitante,Juan,47348002,1178787872
+Administrador,Massimo,47348003,1178787871
+Administrador,Manuel,47348004,1178787870

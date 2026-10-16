@@ -107,8 +107,35 @@ class Viaje:
         return None
 
     def serializar(self):
-        return [self.id, self.transporte.id, self.deposito, self.horario, self.estado, ",".join(map(lambda x: str(x.id), self.solicitudes)), ",".join(map(lambda x: str(x.id), self.incidentes)), ",".join(map(lambda x: str(x.id), self.paradas)), ",".join(map(lambda x: str(x.id), self.paradas_resueltas)), ",".join(map(lambda x: str(x.id), self.historial_solicitudes))]
+        return [self.id, self.transporte.id, self.deposito, self.horario, self.estado, ",".join(map(lambda x: str(x.id), self.solicitudes)), ",".join(map(lambda x: str(x.id), self.incidentes)), ",".join(map(lambda x: str(x.id), self.paradas)), ",".join(map(lambda x: str(x.id), self.paradas_resueltas)), ",".join((list(map(lambda x: str(x.id), self.historial_solicitudes)))[::-1])]
     
+    @classmethod
+    def deserializar(cls, archivo, contexto):
+        matriz = contexto["MatrizDistancia"]
+        transportes = dict(map(lambda tr: (tr.id, tr), contexto["Transporte"]))
+        solicitudes = dict(map(lambda sol: (sol.getter_id(), sol), contexto["Solicitud"]))
+        incidentes = dict(map(lambda inc: (inc.getter_id(), inc), contexto.get("Incidente", [])))
+        paradas = dict(map(lambda par: (par.getter_id(), par), contexto.get("Parada", [])))
+        viajes = []
+        for fila in archivo[1:]:
+            if fila:
+                ids = list(map(lambda celda: list(map(int, filter(None, celda.split(",")))), fila[5:10]))
+                viaje = cls(transportes[int(fila[1])], fila[2], datetime.fromisoformat(fila[3]), matriz)
+                viaje.id = int(fila[0])
+                viaje.estado = fila[4]
+                viaje.solicitudes = list(map(lambda i: solicitudes[i], ids[0]))
+                for solicitud in viaje.solicitudes:
+                    solicitud.setter_viaje(viaje)
+                viaje.incidentes = list(map(lambda i: incidentes[i], ids[1]))
+                for i in ids[2]:
+                    viaje.paradas.encolar(paradas[i])
+                viaje.paradas_resueltas = list(map(lambda i: paradas[i], ids[3]))
+                for i in ids[4]:
+                    viaje.historial_solicitudes.apilar(solicitudes[i])
+                viajes.append(viaje)
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda v: v.id, viajes))
+        return viajes
+
     def agregar_solicitud(self, nueva_solicitud):
         Validaciones.validar_instancia(nueva_solicitud, clase = Solicitud, nombre = "solicitud")
         self._validar_estado("agregar_solicitud", "PLANIFICADO")

@@ -21,6 +21,17 @@ class Articulo:
     def serializar(self):
         return [self.id, self.descripcion, self.peso, self.volumen]
 
+    @classmethod
+    def deserializar(cls, archivo, contexto = None):
+        articulos = []
+        for fila in archivo[1:]:
+            if fila:
+                articulo = cls(fila[1], float(fila[2]), float(fila[3]))
+                articulo.id = int(fila[0])
+                articulos.append(articulo)
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda art: art.id, articulos))
+        return articulos
+
     def __str__(self):
         return f"Artículo {self.id}: {self.descripcion} ({self.peso}kg, {self.volumen}m³)"
     def __repr__(self):

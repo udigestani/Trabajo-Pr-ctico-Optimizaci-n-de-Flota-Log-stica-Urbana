@@ -1,3 +1,4 @@
+from datetime import datetime
 from validaciones import Validaciones
 from solicitud import Solicitud
 from transporte import Transporte
@@ -35,6 +36,27 @@ class Incidente:
     def serializar(self):
         detalles = ",".join(map(lambda par: f"{par[0]}={par[1]}", self.detalles.items()))
         return [self.id, self.tipo, self.fecha, self.descripcion, self.afectado.__class__.__name__, self.afectado.id, detalles]
+
+    @classmethod
+    def deserializar(cls, archivo, contexto):
+        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto["Solicitud"]))
+        dicc_transportes = dict(map(lambda tr: (tr.id, tr), contexto["Transporte"]))
+        incidentes = []
+        for fila in archivo[1:]:
+            if fila:
+                if fila[4] == "Solicitud":
+                    afectado = dicc_solicitudes[int(fila[5])]
+                else:
+                    afectado = dicc_transportes[int(fila[5])]
+                detalles = {}
+                if fila[6]:
+                    detalles = dict(map(lambda x: x.split("="), fila[6].split(",")))
+                # detalles = dict(par.split("=", 1) for par in fila[6].split(",") if par)
+                incidente = Incidente(fila[1], datetime.fromisoformat(fila[2]), fila[3], afectado, **detalles)
+                incidente.id = int(fila[0])
+                incidentes.append(incidente)
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda inc: inc.id, incidentes))
+        return incidentes
 
     def __str__(self):
         fecha_str = self.fecha.strftime('%H:%M')

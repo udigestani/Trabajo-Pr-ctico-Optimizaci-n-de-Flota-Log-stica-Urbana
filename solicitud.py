@@ -1,3 +1,4 @@
+from datetime import datetime
 from comprobante import Comprobante
 from articulo import Articulo
 from excepciones import EstadoInvalidoError, DatoInvalidoError
@@ -24,6 +25,23 @@ class Solicitud:
         else:
             id_comprobante = ""
         return [self.id, self.destino, self.ventana_inicio, self.ventana_fin, ",".join(map(lambda x: str(x.id), self.articulos)), id_viaje, id_comprobante]
+
+    @classmethod
+    def deserializar(cls, archivo, contexto):
+        # Dicc {id: art}
+        dicc_articulos = dict(map(lambda art: (art.id, art), contexto["Articulo"]))
+        # Deserializamos las solicitudes
+        solicitudes = []
+        for fila in archivo[1:]:
+            if fila:
+                if not fila[4]:
+                    raise DatoInvalidoError("La solicitud debe tener al menos un artículo")
+                articulos = map(lambda id: dicc_articulos[int(id)], fila[4].split(","))
+                solicitud = cls(fila[1], datetime.fromisoformat(fila[2]), datetime.fromisoformat(fila[3]), *articulos)
+                solicitud.id = int(fila[0])
+                solicitudes.append(solicitud)
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda s: s.id, solicitudes))
+        return solicitudes
 
     def __str__(self):
         return f"Solicitud {self.id} hacia {self.destino} (Ventana: {self.ventana_inicio.strftime('%H:%M')}-{self.ventana_fin.strftime('%H:%M')})"

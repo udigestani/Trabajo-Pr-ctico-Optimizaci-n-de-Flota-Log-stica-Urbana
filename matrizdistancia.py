@@ -32,4 +32,10 @@ class MatrizDistancia:
         for (origen, destino), km in self.distancias.items():
             lista.append([origen, destino, km])
         return lista
-    
+
+    @classmethod
+    def deserializar(cls, archivo, contexto = None):
+        matriz = cls()
+        matriz.cargar_matriz(map(lambda fila: (fila[0], fila[1], float(fila[2])), archivo[1:]))
+        return matriz
+
