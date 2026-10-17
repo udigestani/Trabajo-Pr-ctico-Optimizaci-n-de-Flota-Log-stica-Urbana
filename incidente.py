@@ -39,8 +39,8 @@ class Incidente:
 
     @classmethod
     def deserializar(cls, archivo, contexto):
-        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto["Solicitud"]))
-        dicc_transportes = dict(map(lambda tr: (tr.id, tr), contexto["Transporte"]))
+        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto[Solicitud]))
+        dicc_transportes = dict(map(lambda tr: (tr.id, tr), contexto[Transporte]))
         incidentes = []
         for fila in archivo[1:]:
             if fila:

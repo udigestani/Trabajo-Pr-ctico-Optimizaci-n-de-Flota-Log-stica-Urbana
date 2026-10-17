@@ -29,7 +29,7 @@ class Solicitud:
     @classmethod
     def deserializar(cls, archivo, contexto):
         # Dicc {id: art}
-        dicc_articulos = dict(map(lambda art: (art.id, art), contexto["Articulo"]))
+        dicc_articulos = dict(map(lambda art: (art.id, art), contexto[Articulo]))
         # Deserializamos las solicitudes
         solicitudes = []
         for fila in archivo[1:]:

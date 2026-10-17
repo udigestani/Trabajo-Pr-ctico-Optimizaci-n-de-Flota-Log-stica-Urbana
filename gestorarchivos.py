@@ -1,24 +1,49 @@
 import csv
+from pathlib import Path
+from excepciones import DatoInvalidoError
+from persona import Persona
+from articulo import Articulo
+from transporte import Transporte
+from matrizdistancia import MatrizDistancia
+from solicitud import Solicitud
+from comprobante import Comprobante
+from incidente import Incidente
+from parada import Parada
+from viaje import Viaje
 
 class GestorArchivos:
+    @staticmethod
+    def existe(ruta):
+        return Path(ruta).is_file()
+
+    @staticmethod
     def escribir(linea1, lista, ruta):
         with open(ruta, mode = 'w', newline = '', encoding = 'utf-8') as archivo:
-            csv.writer(archivo).writerow(linea1)
+            escritor = csv.writer(archivo)
+            escritor.writerow(linea1)
+            escritor.writerows(lista)
+
+    @staticmethod
+    def agregar(lista, ruta):
+        if not GestorArchivos.existe(ruta):
+            raise DatoInvalidoError(f"La ruta {ruta} no corresponde a ningún archivo")
+        with open(ruta, mode = 'a', newline = '', encoding = 'utf-8') as archivo:
             csv.writer(archivo).writerows(lista)
 
+    @staticmethod
+    def leer(ruta):
+        if not GestorArchivos.existe(ruta):
+            return []
+        with open(ruta, mode = 'r', newline = '', encoding = 'utf-8') as archivo:
+            return list(csv.reader(archivo))
 
-    
-
-
-
-
-
-# from persona import *
-# linea1 = ["dni", "nombre", "telefono", "clase"]
-# persona1 = Solicitante("Uriel", 47348001, 1178787878)
-# persona2 = Solicitante("Juan", 47348002, 1178787872)
-# persona3 = Administrador("Massimo", 47348003, 1178787871)
-# persona4 = Administrador("Manuel", 47348004, 1178787870)
-# persona5 = Administrador("Bruno", 47348005, 1178787879)
-# personas = [persona1, persona2, persona3, persona4, persona5]
-# GestorArchivos.escribir(linea1, map(lambda per: per.serializar(), personas), 'archivos persistencia\personas.csv')
+    @staticmethod
+    def leer_todos():
+        # articulos, matriz, personas, transportes, solicitudes, comprobantes, incidentes, paradas, viajes
+        carpeta = Path('archivos persistencia')
+        rutas = {'articulos.csv': Articulo, 'matriz.csv': MatrizDistancia, 'personas.csv': Persona, 'transportes.csv': Transporte, 'solicitudes.csv': Solicitud, 'comprobantes.csv': Comprobante, 'incidentes.csv': Incidente, 'paradas.csv': Parada, 'viajes.csv': Viaje}
+        contexto = {}
+        for ruta, clase in rutas.items():
+            lineas = GestorArchivos.leer(carpeta / ruta)
+            contexto[clase] = clase.deserializar(lineas, contexto = contexto)
+        return contexto

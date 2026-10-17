@@ -111,11 +111,11 @@ class Viaje:
     
     @classmethod
     def deserializar(cls, archivo, contexto):
-        matriz = contexto["MatrizDistancia"]
-        transportes = dict(map(lambda tr: (tr.id, tr), contexto["Transporte"]))
-        solicitudes = dict(map(lambda sol: (sol.getter_id(), sol), contexto["Solicitud"]))
-        incidentes = dict(map(lambda inc: (inc.getter_id(), inc), contexto.get("Incidente", [])))
-        paradas = dict(map(lambda par: (par.getter_id(), par), contexto.get("Parada", [])))
+        matriz = contexto[MatrizDistancia]
+        transportes = dict(map(lambda tr: (tr.id, tr), contexto[Transporte]))
+        solicitudes = dict(map(lambda sol: (sol.getter_id(), sol), contexto[Solicitud]))
+        incidentes = dict(map(lambda inc: (inc.getter_id(), inc), contexto.get(Incidente, [])))
+        paradas = dict(map(lambda par: (par.getter_id(), par), contexto.get(Parada, [])))
         viajes = []
         for fila in archivo[1:]:
             if fila:

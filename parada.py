@@ -43,8 +43,8 @@ class Parada:
 
     @classmethod
     def deserializar(cls, archivo, contexto):
-        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto["Solicitud"]))
-        dicc_comprobantes = dict(map(lambda comp: (comp.id, comp), contexto["Comprobante"]))
+        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto[Solicitud]))
+        dicc_comprobantes = dict(map(lambda comp: (comp.id, comp), contexto[Comprobante]))
         paradas = []
         for fila in archivo[1:]:
             if fila:
