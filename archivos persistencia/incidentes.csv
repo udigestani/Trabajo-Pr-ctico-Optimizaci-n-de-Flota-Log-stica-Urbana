@@ -1,0 +1,2 @@
+id,tipo,fecha,descripcion,clase_afectado,id_afectado,detalles,Incidente
+1,AUSENTE,2027-03-01 10:00:00,Nadie en el domicilio,Solicitud,2,intentos=1
