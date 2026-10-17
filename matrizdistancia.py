@@ -36,6 +36,6 @@ class MatrizDistancia:
     @classmethod
     def deserializar(cls, archivo, contexto = None):
         matriz = cls()
-        matriz.cargar_matriz(map(lambda fila: (fila[0], fila[1], float(fila[2])), archivo[1:]))
+        matriz.cargar_matriz(list(map(lambda fila: (fila[0], fila[1], float(fila[2])), filter(None, archivo[1:]))))
         return matriz
 
