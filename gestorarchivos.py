@@ -66,7 +66,6 @@ class GestorArchivos:
                 datos = datos.serializar()
             else:
                 datos = list(map(lambda x: x.serializar(), datos))
-            print(datos, end = "\n \n")
             GestorArchivos.escribir(linea1.split(","), datos, carpeta / ruta)
         return None
 

@@ -1,3 +1,8 @@
 id,id_transporte,deposito,horario,estado,solicitudes,incidentes,paradas,paradas_resueltas,historial_solicitudes,Viaje
 1,1,Deposito,2027-03-01 08:00:00,FINALIZADO,"1,2",1,,"1,2","1,2"
-2,2,Deposito,2027-03-01 09:00:00,EN_CURSO,"3,4",,"3,4",,"3,4"
+2,2,Deposito,2027-03-01 09:00:00,FINALIZADO,"3,4",3,,"3,4","3,4"
+3,3,Deposito,2026-10-19 10:00:00,FINALIZADO,"5,6",,,"5,6","5,6"
+4,4,Deposito,2026-10-20 09:00:00,FINALIZADO,"7,8",2,,"7,8","7,8"
+5,5,Deposito,2026-10-21 08:00:00,EN_CURSO,"9,10",,10,9,"9,10"
+6,6,Deposito,2026-10-22 07:30:00,PLANIFICADO,"11,12,13,15",,,,"11,12,13,15"
+7,7,Deposito,2026-10-23 08:00:00,PLANIFICADO,,,,,

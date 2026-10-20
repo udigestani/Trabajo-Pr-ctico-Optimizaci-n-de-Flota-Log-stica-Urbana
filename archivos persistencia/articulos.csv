@@ -5,3 +5,15 @@ id,descripcion,peso,volumen,Articulo
 4,Teclado,1.0,0.01
 5,Mouse,0.5,0.005
 6,Auriculares,0.8,0.01
+7,Silla,5.0,0.5
+8,Teclado,1.0,0.01
+9,Heladera,60.0,1.5
+10,Microondas,12.0,0.1
+11,Caja de libros,8.0,0.05
+12,Mouse,0.5,0.005
+13,Auriculares,0.8,0.01
+14,Monitor,8.0,0.1
+15,Escritorio,40.0,0.8
+16,Computadora,1.5,0.08
+19,Cuadernos,1.0,0.1
+20,Cartucheraa,0.5,0.6
