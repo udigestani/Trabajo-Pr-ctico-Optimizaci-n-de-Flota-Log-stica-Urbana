@@ -15,53 +15,53 @@ from parada import Parada
 def pedir_texto(mensaje, mensajeUnico = None):
     if mensajeUnico:
         print(mensajeUnico)
-    while True:
-        ingresado = input(mensaje).strip()
-        if ingresado:
-            return ingresado
-        else:
-            print(f"DatoInvalidoError: Se esperaba un texto no vacío")
+    ingresado = input(mensaje).strip()
+    if ingresado:
+        return ingresado
+    else:
+        print(f"DatoInvalidoError: Se esperaba un texto no vacío")
+        return pedir_texto(mensaje)
 
 
 def pedir_entero(mensaje, mensajeUnico = None):
     if mensajeUnico:
         print(mensajeUnico)
-    while True:
-        entero = input(mensaje).strip()
-        try:
-            return int(entero)
-        except ValueError:
-            print(f"ValueError: Se espera un número, en lugar de {entero}")
-
+    entero = input(mensaje).strip()
+    try:
+        return int(entero)
+    except ValueError:
+        print(f"ValueError: Se espera un entero, en lugar de {entero}")
+        return pedir_entero(mensaje)
 
 def pedir_numero(mensaje, mensajeUnico = None):
     if mensajeUnico:
         print(mensajeUnico)
-    while True:
-        numero = input(mensaje).strip()
-        try:
-            return float(numero)
-        except ValueError:
-            print(f"ValueError: Se espera un número, en lugar de {numero}")
+    numero = input(mensaje).strip()
+    try:
+        return float(numero)
+    except ValueError:
+        print(f"ValueError: Se espera un número, en lugar de {numero}")
+        return pedir_numero(mensaje)
 
 
 def pedir_fecha_hora(mensaje):
-    while True:
-        valor = input(mensaje + " (formato DD/MM/AAAA HH:MM): ").strip()
-        try:
-            return datetime.strptime(valor, "%d/%m/%Y %H:%M")
-        except ValueError:
-            print("Formato invalido. Ejemplo: 01/06/2024 09:30")
+    valor = input(mensaje + " (formato DD/MM/AAAA HH:MM): ").strip()
+    try:
+        return datetime.strptime(valor, "%d/%m/%Y %H:%M")
+    except ValueError:
+        print("Formato invalido. Ejemplo: 01/06/2024 09:30")
+        return pedir_fecha_hora(mensaje)
 
 
-def elegir_transporte():
+def elegir_transporte(mostrar_opciones = False):
     OPCIONES_TRANSPORTE = {"1": Furgoneta, "2": Motocicleta, "3": Camion}
-    print("1) Furgoneta\n2) Motocicleta\n3) Camión")
-    while True:
-        opcion = input("Opcion: ").strip()
-        if opcion in OPCIONES_TRANSPORTE:
-            return OPCIONES_TRANSPORTE[opcion]()  
-        print("Opcion invalida, elegi 1, 2 o 3.")
+    if mostrar_opciones:
+        print("1) Furgoneta\n2) Motocicleta\n3) Camión")
+    opcion = input("Opcion: ").strip()
+    if opcion in OPCIONES_TRANSPORTE:
+        return OPCIONES_TRANSPORTE[opcion]()  
+    print("Opcion invalida, elegi 1, 2 o 3.")
+    return elegir_transporte()
 
 
 def alcanzables(lugar, matriz):
@@ -88,17 +88,18 @@ def crear_administrador(personas):
     personas.append(administrador)
 
 
-def pedir_articulos():
-    articulos = []
-    while True:
-        descripcion = pedir_texto("Descripcion del articulo: ")
-        peso = pedir_numero("Peso (kg): ")
-        volumen = pedir_numero("Volumen (m3): ")
-        articulos.append(Articulo(descripcion, peso, volumen))
-        otro = input("Agregar otro articulo? (s/n): ").strip().lower()
-        if otro != "s":
-            break
-    return articulos
+def pedir_articulos(articulos = None):
+    if articulos is None:
+        articulos = []
+    descripcion = pedir_texto("Descripcion del articulo: ")
+    peso = pedir_numero("Peso (kg): ")
+    volumen = pedir_numero("Volumen (m3): ")
+    articulos.append(Articulo(descripcion, peso, volumen))
+    otro = input("Agregar otro articulo? (s/n): ").strip().lower()
+    if otro != "s":
+        return articulos
+    return pedir_articulos(articulos = articulos)
+
 
 
 def ver_registrados(personas):
@@ -151,7 +152,7 @@ def salir(contexto):
 
 
 def crear_viaje(admin, viajes, matriz, transportes):
-    transporte = elegir_transporte()
+    transporte = elegir_transporte(mostrar_opciones = True)
     deposito = pedir_texto("Nombre del deposito: ")
     horario = pedir_fecha_hora("Horario de salida")
     viaje = admin.crear_viaje(transporte, deposito, horario, matriz)
@@ -208,20 +209,19 @@ def ver_matriz(matriz):
 
 
 def agregar_distancias(matriz):
-    while True:
-        origen = pedir_texto("Origen: ")
-        destino = pedir_texto("Destino: ")
-        km = pedir_numero("Distancia en km: ")
-        matriz.agregar_distancia(origen, destino, km)
-        vuelta = input("Cargar la vuelta también? (s/n): ").strip().lower()
-        if vuelta == "s":
-            km = pedir_numero(f"Distancia {destino} -> {origen} en km: ")
-            matriz.agregar_distancia(destino, origen, km)
+    origen = pedir_texto("Origen: ")
+    destino = pedir_texto("Destino: ")
+    km = pedir_numero("Distancia en km: ")
+    matriz.agregar_distancia(origen, destino, km)
+    vuelta = input("Cargar la vuelta también? (s/n): ").strip().lower()
+    if vuelta == "s":
+        km = pedir_numero(f"Distancia {destino} -> {origen} en km: ")
+        matriz.agregar_distancia(destino, origen, km)
 
-        otro = input("Agregar otro tramo? (s/n): ").strip().lower()
-        if otro != "s":
-            break
-    return matriz
+    otro = input("Agregar otro tramo? (s/n): ").strip().lower()
+    if otro != "s":
+        return matriz
+    return agregar_distancias(matriz)
 
 
 def cerrar_sesion(contexto):
