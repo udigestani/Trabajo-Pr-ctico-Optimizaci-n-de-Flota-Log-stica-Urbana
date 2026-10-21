@@ -1,5 +1,3 @@
-# ACTUALIZAR LOS TESTS DE ORDENAR_SOLICITUDES, COSTO_TOTAL Y DISTANCIA_TOTAL
-
 import pytest
 from datetime import datetime
 import re
@@ -90,6 +88,19 @@ def solicitud_b(mocker):
     mock.getter_ventana_fin.return_value = hora(13)
     mock.getter_peso.return_value = 200
     mock.getter_volumen.return_value = 3
+    mock.esta_asignada.return_value = False
+    mock.esta_entregada.return_value = False
+    return mock
+
+@pytest.fixture
+def solicitud_c(mocker):
+    mock = mocker.Mock(spec = Solicitud)
+    mock.getter_id.return_value = 3
+    mock.getter_destino.return_value = "Destino C"
+    mock.getter_ventana_inicio.return_value = hora(9, 30)
+    mock.getter_ventana_fin.return_value = hora(10, 15)
+    mock.getter_peso.return_value = 100
+    mock.getter_volumen.return_value = 2
     mock.esta_asignada.return_value = False
     mock.esta_entregada.return_value = False
     return mock
@@ -216,6 +227,10 @@ def mock_agregar_solicitud(mocker):
 @pytest.fixture
 def mock_distancia_total(mocker):
     return mocker.patch.object(Viaje, "distancia_total", autospec = True, return_value = 50)
+
+@pytest.fixture
+def mock_costo_total(mocker):
+    return mocker.patch.object(Viaje, "costo_total", autospec = True, return_value = 110)
 
 @pytest.fixture
 def mock_ordenar_solicitudes(mocker, solicitud_a, solicitud_b):
@@ -593,19 +608,45 @@ def test_distanciaTotal_tramoFaltante_sePropaga(viaje_cargado, matriz):
     matriz.obtener_distancia.side_effect = [15, 10, RutaIncompletaError("Destino B", "Deposito")]
     with pytest.raises(RutaIncompletaError, match = "No existe distancia de Destino B a Deposito"):
         viaje_cargado.distancia_total()
+def test_distanciaTotal_otroOrden(viaje_cargado, solicitud_a, solicitud_b, matriz, mocker):
+    matriz.obtener_distancia.return_value = 15
+    assert viaje_cargado.distancia_total([solicitud_a]) == 30
+    solicitud_b.getter_destino.assert_not_called()
+    assert matriz.obtener_distancia.call_args_list == [mocker.call("Deposito", "Destino A"), mocker.call("Destino A", "Deposito")]
+    matriz.obtener_distancia.return_value = 25
+    assert viaje_cargado.distancia_total([solicitud_b]) == 50
+    assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b]
+def test_distanciaTotal_ordenVacio(viaje_cargado, matriz):
+    assert viaje_cargado.distancia_total([]) == 0
+    matriz.obtener_distancia.assert_called_once_with("Deposito", "Deposito")
 
 
 # A futuro: Costo total y el cálculo de impacto ambiental (delegado en transporte)
 # ---------- costo_total e impacto_ambiental ----------
-def test_costoTotal_ok(viaje_cargado, mock_distancia_total, transporte):
+def test_costoTotal_ok(viaje_cargado, mock_distancia_total, transporte, solicitud_a, solicitud_b):
     # 50 km * $2 / km + 2 paradas * $5 / parada = $110
     assert viaje_cargado.costo_total() == 110
     transporte.getter_costo_km.assert_called_once_with()
     transporte.getter_costo_parada.assert_called_once_with()
-    mock_distancia_total.assert_called_once_with(viaje_cargado)
+    mock_distancia_total.assert_called_once_with(viaje_cargado, [solicitud_a, solicitud_b])
 def test_costoTotal_viajeVacio(viaje, mock_distancia_total, transporte):
     mock_distancia_total.return_value = 0
     assert viaje.costo_total() == 0
+    mock_distancia_total.assert_called_once_with(viaje, [])
+def test_costoTotal_otroOrden(viaje_cargado, mock_distancia_total, transporte, solicitud_a, solicitud_b):
+    mock_distancia_total.return_value = 30
+    # 30 km * $2 / km + 1 parada * $5 / parada = $65
+    assert viaje_cargado.costo_total([solicitud_a]) == 65
+    mock_distancia_total.assert_called_once_with(viaje_cargado, [solicitud_a])
+    assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b]
+def test_costoTotal_ordenVacio(viaje_cargado, mock_distancia_total):
+    mock_distancia_total.return_value = 0
+    assert viaje_cargado.costo_total([]) == 0
+    mock_distancia_total.assert_called_once_with(viaje_cargado, [])
+def test_costoTotal_tramoFaltante_sePropaga(viaje_cargado, mock_distancia_total):
+    mock_distancia_total.side_effect = RutaIncompletaError("Destino B", "Deposito")
+    with pytest.raises(RutaIncompletaError, match = "No existe distancia de Destino B a Deposito"):
+        viaje_cargado.costo_total()
 def test_impactoAmbiental_delegaEnElTransporte(viaje_cargado, transporte, mock_distancia_total):
     transporte.calcular_impacto_ambiental.return_value = 13.5
     assert viaje_cargado.impacto_ambiental() == 13.5
@@ -652,52 +693,95 @@ def test_viaje_setterEstado_transicionIlegal(viaje, mock_validaciones):
 
 # ---------- ordenar_solicitudes ----------
 # Funcionamiento normal
-def test_ordenarSolicitudes_vecinos_ok(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, matriz, solicitud_a, solicitud_b):
-    # Vecinos funciona y orden válido
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_a]
-    mock_ventanas.sugerir_orden.return_value = [solicitud_a, solicitud_b]
-    mock_validar_recorrido.return_value = True
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_b, solicitud_a]
-    mock_vecinos.sugerir_orden.assert_called_once_with("Deposito", [solicitud_a, solicitud_b], matriz)
-    mock_validar_recorrido.assert_called_once_with(viaje_cargado, [solicitud_b, solicitud_a])
-    mock_ventanas.sugerir_orden.assert_not_called()
-    assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b]
-    assert viaje_cargado.getter_estado() == "PLANIFICADO"
-def test_ordenarSolicitudes_ventanas_ok(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, matriz, solicitud_a, solicitud_b):
-    # Vecinos funciona, orden no valido, y ventanas funciona con orden válido
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_a]
-    mock_ventanas.sugerir_orden.return_value = [solicitud_a, solicitud_b]
-    mock_validar_recorrido.side_effect = [VentanaIncumplidaError("Destino A", "10:30", "10:20"), True]
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b]
-    mock_vecinos.sugerir_orden.assert_called_with("Deposito", [solicitud_a, solicitud_b], matriz)
+def test_ordenarSolicitudes_ok(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
+    # Gana solicitudes
+    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
+    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
+    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
+    mock_costo_total.side_effect = [100, 150, 200]
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b, solicitud_c]
+    mock_vecinos.sugerir_orden.assert_called_once_with("Deposito", [solicitud_a, solicitud_b, solicitud_c], matriz)
+    mock_ventanas.sugerir_orden.assert_called_once_with("Deposito", [solicitud_a, solicitud_b, solicitud_c], matriz)
     assert mock_validar_recorrido.call_count == 2
-    mock_validar_recorrido.assert_any_call(viaje_cargado, [solicitud_b, solicitud_a])
-    mock_validar_recorrido.assert_any_call(viaje_cargado, [solicitud_a, solicitud_b])
-    mock_ventanas.sugerir_orden.assert_called_once_with("Deposito", [solicitud_a, solicitud_b], matriz)
-def test_ordenarSolicitudes_vecinosNo_ventana_ok(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, matriz, solicitud_a, solicitud_b):
-    # Vecinos no funciona, y ventanas funciona con orden válido
+    mock_validar_recorrido.assert_any_call(viaje_cargado, (solicitud_b, solicitud_c, solicitud_a))
+    mock_validar_recorrido.assert_any_call(viaje_cargado, (solicitud_c, solicitud_a, solicitud_b))
+    assert mock_costo_total.call_count == 3
+    assert viaje_cargado.getter_estado() == "PLANIFICADO"
+    # Gana vecinos
+    mock_costo_total.side_effect = [150, 100, 200]
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_b, solicitud_c, solicitud_a]
+    # Gana ventanas
+    mock_costo_total.side_effect = [150, 200, 100]
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_c, solicitud_a, solicitud_b]
+    assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b, solicitud_c] # No se modifica solicitudes
+def test_ordenarSolicitudes_empate(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
+    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
+    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
+    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
+    mock_costo_total.return_value = 100
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b, solicitud_c]
+def test_ordenarSolicitudes_vecinosVentanaIncumplida(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
+    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
+    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
+    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
+    mock_validar_recorrido.side_effect = [VentanaIncumplidaError("Destino A", hora(10, 30), hora(10, 20)), True]
+    mock_costo_total.side_effect = [100, 90]
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_c, solicitud_a, solicitud_b]
+    assert mock_validar_recorrido.call_count == 2
+    assert mock_costo_total.call_count == 2
+def test_ordenarSolicitudes_ventanasVentanaIncumplida(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
+    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
+    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
+    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
+    mock_validar_recorrido.side_effect = [True, VentanaIncumplidaError("Destino A", hora(10, 30), hora(10, 20))]
+    mock_costo_total.side_effect = [100, 90]
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_b, solicitud_c, solicitud_a]
+    assert mock_validar_recorrido.call_count == 2
+    assert mock_costo_total.call_count == 2
+def test_ordenarSolicitudes_vecinosRutaIncompleta(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
+    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
     mock_vecinos.sugerir_orden.side_effect = RutaIncompletaError("Destino B", "Destino A")
-    mock_ventanas.sugerir_orden.return_value = [solicitud_a, solicitud_b]
-    mock_validar_recorrido.return_value = True
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b]
-    mock_vecinos.sugerir_orden.assert_called_with("Deposito", [solicitud_a, solicitud_b], matriz)
-    assert mock_validar_recorrido.call_count == 1
-    mock_validar_recorrido.assert_called_once_with(viaje_cargado, [solicitud_a, solicitud_b])
-    mock_ventanas.sugerir_orden.assert_called_once_with("Deposito", [solicitud_a, solicitud_b], matriz)
-# Ninguna
-def test_ordenarSolicitudes_vecinosYVentanaFallan(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, solicitud_a, solicitud_b):
+    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
+    mock_costo_total.side_effect = [100, 90]
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_c, solicitud_a, solicitud_b]
+    mock_validar_recorrido.assert_called_once_with(viaje_cargado, (solicitud_c, solicitud_a, solicitud_b))
+def test_ordenarSolicitudes_ventanasRutaIncompleta(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
+    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
+    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
+    mock_ventanas.sugerir_orden.side_effect = RutaIncompletaError("Destino B", "Destino A")
+    mock_costo_total.side_effect = [100, 90]
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_b, solicitud_c, solicitud_a]
+def test_ordenarSolicitudes_vecinosYVentanaFallan(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
+    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
     mock_vecinos.sugerir_orden.side_effect = RutaIncompletaError("Deposito", "Destino B")
     mock_ventanas.sugerir_orden.side_effect = RutaIncompletaError("Deposito", "Destino B")
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b]
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b, solicitud_c]
     mock_validar_recorrido.assert_not_called()
-# Ambos recorridos inválidos
-def test_ordenarSolicitudes_validarRecorridoFalla(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, solicitud_a, solicitud_b):
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_a]
-    mock_ventanas.sugerir_orden.return_value = [solicitud_b, solicitud_a]
+def test_ordenarSolicitudes_validarRecorridoFalla(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
+    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
+    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
+    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
+    mock_validar_recorrido.side_effect = VentanaIncumplidaError("Destino A", hora(10, 30), hora(10, 20))
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b, solicitud_c]
+def test_ordenarSolicitudes_ordenActualRutaIncompleta_ganaPolitica(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
+    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
+    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
+    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
+    mock_costo_total.side_effect = [RutaIncompletaError("Deposito", "Destino A"), 90, 110]
+    assert viaje_cargado.ordenar_solicitudes() == [solicitud_b, solicitud_c, solicitud_a]
+def test_ordenarSolicitudes_ordenActualRutaIncompleta_politicasFallan_sePropaga(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, solicitud_a, solicitud_b):
+    mock_costo_total.side_effect = RutaIncompletaError("Deposito", "Destino A")
+    mock_vecinos.sugerir_orden.side_effect = RutaIncompletaError("Deposito", "Destino B")
+    mock_ventanas.sugerir_orden.side_effect = RutaIncompletaError("Deposito", "Destino B")
+    with pytest.raises(RutaIncompletaError, match = "No existe distancia de Deposito a Destino A"):
+        viaje_cargado.ordenar_solicitudes()
+    assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b]
+def test_ordenarSolicitudes_ordenActualRutaIncompleta_recorridosInvalidos_sePropaga(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, solicitud_a, solicitud_b):
+    mock_costo_total.side_effect = RutaIncompletaError("Deposito", "Destino A")
     mock_validar_recorrido.side_effect = VentanaIncumplidaError("Destino A", hora(11), hora(10, 45))
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b]
+    with pytest.raises(RutaIncompletaError, match = "No existe distancia de Deposito a Destino A"):
+        viaje_cargado.ordenar_solicitudes()
     assert mock_validar_recorrido.call_count == 2
-
 
 # ---------- iniciar_viaje ----------
 # Funcionamiento normal
