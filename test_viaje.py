@@ -595,29 +595,29 @@ def test_validarRecorrido_tramoFaltante_sePropaga(viaje, matriz, solicitud_a, so
 # ---------- distancia_total ----------
 def test_distanciaTotal_ok(viaje_cargado, solicitud_a, solicitud_b, matriz, mocker):
     matriz.obtener_distancia.side_effect = [15, 10, 25]
-    assert viaje_cargado.distancia_total() == 50
+    assert viaje_cargado.distancia_total("Deposito", [solicitud_a, solicitud_b]) == 50
     matriz.obtener_distancia.assert_any_call("Deposito", "Destino A")
     matriz.obtener_distancia.assert_any_call("Destino A", "Destino B")
     matriz.obtener_distancia.assert_any_call("Destino B", "Deposito")
     assert matriz.obtener_distancia.call_count == 3
 def test_distanciaTotal_viajeVacio(viaje, matriz):
     matriz.obtener_distancia.return_value = 0
-    assert viaje.distancia_total() == 0
+    assert viaje.distancia_total("Deposito", viaje.solicitudes) == 0
     matriz.obtener_distancia.assert_called_once_with("Deposito", "Deposito")
-def test_distanciaTotal_tramoFaltante_sePropaga(viaje_cargado, matriz):
+def test_distanciaTotal_tramoFaltante_sePropaga(viaje_cargado, matriz, solicitud_a, solicitud_b):
     matriz.obtener_distancia.side_effect = [15, 10, RutaIncompletaError("Destino B", "Deposito")]
     with pytest.raises(RutaIncompletaError, match = "No existe distancia de Destino B a Deposito"):
-        viaje_cargado.distancia_total()
+        viaje_cargado.distancia_total("Deposito", [solicitud_a, solicitud_b])
 def test_distanciaTotal_otroOrden(viaje_cargado, solicitud_a, solicitud_b, matriz, mocker):
     matriz.obtener_distancia.return_value = 15
-    assert viaje_cargado.distancia_total([solicitud_a]) == 30
+    assert viaje_cargado.distancia_total("Deposito", [solicitud_a]) == 30
     solicitud_b.getter_destino.assert_not_called()
     assert matriz.obtener_distancia.call_args_list == [mocker.call("Deposito", "Destino A"), mocker.call("Destino A", "Deposito")]
     matriz.obtener_distancia.return_value = 25
-    assert viaje_cargado.distancia_total([solicitud_b]) == 50
+    assert viaje_cargado.distancia_total("Deposito", [solicitud_b]) == 50
     assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b]
 def test_distanciaTotal_ordenVacio(viaje_cargado, matriz):
-    assert viaje_cargado.distancia_total([]) == 0
+    assert viaje_cargado.distancia_total("Deposito", []) == 0
     matriz.obtener_distancia.assert_called_once_with("Deposito", "Deposito")
 
 
@@ -628,21 +628,21 @@ def test_costoTotal_ok(viaje_cargado, mock_distancia_total, transporte, solicitu
     assert viaje_cargado.costo_total() == 110
     transporte.getter_costo_km.assert_called_once_with()
     transporte.getter_costo_parada.assert_called_once_with()
-    mock_distancia_total.assert_called_once_with(viaje_cargado, [solicitud_a, solicitud_b])
+    mock_distancia_total.assert_called_once_with(viaje_cargado, "Deposito", [solicitud_a, solicitud_b])
 def test_costoTotal_viajeVacio(viaje, mock_distancia_total, transporte):
     mock_distancia_total.return_value = 0
     assert viaje.costo_total() == 0
-    mock_distancia_total.assert_called_once_with(viaje, [])
+    mock_distancia_total.assert_called_once_with(viaje, "Deposito", [])
 def test_costoTotal_otroOrden(viaje_cargado, mock_distancia_total, transporte, solicitud_a, solicitud_b):
     mock_distancia_total.return_value = 30
     # 30 km * $2 / km + 1 parada * $5 / parada = $65
     assert viaje_cargado.costo_total([solicitud_a]) == 65
-    mock_distancia_total.assert_called_once_with(viaje_cargado, [solicitud_a])
+    mock_distancia_total.assert_called_once_with(viaje_cargado, "Deposito", [solicitud_a])
     assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b]
 def test_costoTotal_ordenVacio(viaje_cargado, mock_distancia_total):
     mock_distancia_total.return_value = 0
     assert viaje_cargado.costo_total([]) == 0
-    mock_distancia_total.assert_called_once_with(viaje_cargado, [])
+    mock_distancia_total.assert_called_once_with(viaje_cargado, "Deposito", [])
 def test_costoTotal_tramoFaltante_sePropaga(viaje_cargado, mock_distancia_total):
     mock_distancia_total.side_effect = RutaIncompletaError("Destino B", "Deposito")
     with pytest.raises(RutaIncompletaError, match = "No existe distancia de Destino B a Deposito"):

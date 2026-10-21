@@ -37,46 +37,40 @@ class Viaje:
         self.agregar_solicitud(nueva_solicitud)
         return nueva_solicitud
 
-    def validar_recorrido(self, recorrido_nuevo):
-        horario = self.horario
-        ubicacion = self.deposito
-        for solicitud in recorrido_nuevo:
-            lugar = solicitud.getter_destino()
-            distancia = self.matriz.obtener_distancia(ubicacion, lugar)
-            tiempo_hrs = distancia / self.transporte.getter_velocidad()
-            llegada = horario + timedelta(hours=tiempo_hrs)
-            if llegada > solicitud.getter_ventana_fin():
-                raise VentanaIncumplidaError(lugar, llegada, solicitud.getter_ventana_fin())
-            if llegada < solicitud.getter_ventana_inicio():
-                llegada = solicitud.getter_ventana_inicio()
-            horario = llegada + timedelta(minutes=10)
-            ubicacion = lugar
-        # distancia = self.matriz.obtener_distancia(ubicacion, self.deposito) #NO LO ESTAMOS USANDO, desde acá ya es True a menos que la matriz esté incompleta
-        # tiempo_hrs = distancia / self.transporte.getter_velocidad()
-        # llegada = horario + timedelta(hours=tiempo_hrs)
-        return True
+    def validar_recorrido(self, recorrido, indice = 0, horario = None, ubicacion = None):
+        if horario is None:
+            horario = self.horario
+        if ubicacion is None:
+            ubicacion = self.deposito
+        if indice == len(recorrido):
+            return True
+        solicitud = recorrido[indice]
+        lugar = solicitud.getter_destino()
+        distancia = self.matriz.obtener_distancia(ubicacion, lugar)
+        tiempo_hrs = distancia / self.transporte.getter_velocidad()
+        llegada = horario + timedelta(hours=tiempo_hrs)
+        if llegada > solicitud.getter_ventana_fin():
+            raise VentanaIncumplidaError(lugar, llegada, solicitud.getter_ventana_fin())
+        if llegada < solicitud.getter_ventana_inicio():
+            llegada = solicitud.getter_ventana_inicio()
+        return self.validar_recorrido(recorrido, indice = indice + 1, horario = llegada + timedelta(minutes=10), ubicacion = lugar)
 
-    def distancia_total(self, orden = None):
-        if orden is None:
-            orden = self.solicitudes
-        ubicacion = self.deposito
-        distancia = 0
-        for solicitud in orden:
-            lugar = solicitud.getter_destino()
-            distancia += self.matriz.obtener_distancia(ubicacion, lugar)
-            ubicacion = lugar
-        distancia += self.matriz.obtener_distancia(ubicacion, self.deposito)
-        return distancia
+    def distancia_total(self, ubicacion, restantes):
+        if not restantes:
+            return self.matriz.obtener_distancia(ubicacion, self.deposito)
+        lugar = restantes[0].getter_destino()
+        distancia = self.matriz.obtener_distancia(ubicacion, lugar)
+        return distancia + self.distancia_total(lugar, restantes[1:])
 
     def costo_total(self, orden = None):
         if orden is None:
             orden = self.solicitudes
-        costo_distancia = self.distancia_total(orden) * self.transporte.getter_costo_km()
+        costo_distancia = self.distancia_total(self.deposito, orden) * self.transporte.getter_costo_km()
         costo_paradas = len(orden) * self.transporte.getter_costo_parada()
         return costo_distancia + costo_paradas
 
     def impacto_ambiental(self):
-        return self.transporte.calcular_impacto_ambiental(self.distancia_total(), self.getter_peso())
+        return self.transporte.calcular_impacto_ambiental(self.distancia_total(self.deposito, self.solicitudes), self.getter_peso())
     def getter_estado(self):
         return self.estado
     def getter_peso(self):
