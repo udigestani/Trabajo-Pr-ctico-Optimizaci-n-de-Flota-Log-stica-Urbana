@@ -139,10 +139,10 @@ class Viaje:
             raise DatoInvalidoError(f"El destino de la solicitud {nueva_solicitud.getter_id()} no puede ser el depósito ({self.deposito})")
         peso = self.getter_peso() + nueva_solicitud.getter_peso()
         volumen = self.getter_volumen() + nueva_solicitud.getter_volumen()
-        if peso > self.transporte.getter_peso_max():
-            raise ExcesoPesoError(self.transporte.getter_peso_max(), peso)
-        elif volumen > self.transporte.getter_volumen():
-            raise ExcesoVolumenError(self.transporte.getter_volumen(), volumen)
+        if peso > self.getter_peso_max():
+            raise ExcesoPesoError(self.getter_peso_max(), peso)
+        elif volumen > self.getter_volumen_max():
+            raise ExcesoVolumenError(self.getter_volumen_max(), volumen)
         self.validar_recorrido([*self.solicitudes, nueva_solicitud])
         self.solicitudes.append(nueva_solicitud)
         self.historial_solicitudes.apilar(nueva_solicitud)

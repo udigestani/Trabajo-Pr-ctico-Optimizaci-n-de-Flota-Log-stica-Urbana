@@ -114,11 +114,7 @@ def iniciar_sesion(personas, contexto):
     dni = pedir_entero("Ingrese su número de DNI: ")
     while dni not in Persona.dnis_registrados:
         dni = pedir_entero("Ingrese su número de DNI: ", mensajeUnico = "DNI Incorrecto: Volver a intentar o probar creando una cuenta")
-    # persona = Persona.dnis_registrados[dni]      # Si volvemos a meter dnis_registrados como diccionario??
-    for persona in personas:
-        if persona.dni == dni:
-            break
-    print(persona)
+    persona = next(filter(lambda p: p.dni == dni, personas), None)
     if isinstance(persona, Administrador):
         menu_administrador(persona, contexto)
     elif isinstance(persona, Solicitante):
@@ -166,6 +162,29 @@ def ver_viajes(viajes):
     for viaje in viajes:
         print(viaje)
 
+def ver_impacto_ambiental(viajes):
+    print("\nIMPACTO AMBIENTAL DE CADA VIAJE: ")
+    total = 0
+    for viaje in viajes:
+        print(f"Viaje {viaje.getter_id()}: {viaje.impacto_ambiental():.2f}kg CO₂")
+        total += viaje.impacto_ambiental()
+    print(f"\nEl impacto ambiental total de los viajes es de {total:.2f}kg CO₂")
+
+def deshacer_ultima_solicitud(viajes):
+    viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
+    if viaje is not None:
+        solicitud = viaje.deshacer_ultima_solicitud()
+        otro = input(f"Solicitud sacada: {solicitud}. Agregar a otro viaje? (s/n): ").strip().lower()
+        if otro != "s":
+            print("La solicitud quedará pendiente de asignación")
+            return None
+        nuevo_viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
+        if nuevo_viaje is not None:
+            try:
+                nuevo_viaje.agregar_solicitud(solicitud)
+            except Exception as e:
+                print(f"Error al agregar al nuevo viaje ({e}): La solicitud quedará pendiente de asignación.")
+# A futuro, asginar viaje a las solicitudes pendientes de asignación?
 
 def iniciar_viaje(viajes, paradas):
     viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
@@ -278,11 +297,11 @@ def menu_administrador(admin, contexto):
     incidentes = contexto[Incidente]
 
     MENSAJE_ADMIN = f"MENU ADMINISTRADOR: {admin}"
-    MENSAJE_MENU_ADMIN = "\n1) Crear viaje\n2) Ver viajes\n3) Iniciar viaje\n4) Registrar entrega\n5) Registrar incidente\n6) Ver matriz\n7) Agregar distancias\n8) Cerrar sesión"
-    OPCIONES_ADMIN = {"1": (crear_viaje, admin, viajes, matriz, transportes), "2": (ver_viajes, viajes),"3": (iniciar_viaje, viajes, paradas),"4": (registrar_entrega, viajes, comprobantes), "5": (registrar_incidente, viajes, incidentes),"6": (ver_matriz, matriz),"7": (agregar_distancias, matriz), "8": (cerrar_sesion, contexto)}
+    MENSAJE_MENU_ADMIN = "\n1) Crear viaje\n2) Ver viajes\n3) Iniciar viaje\n4) Registrar entrega\n5) Registrar incidente\n6) Ver matriz\n7) Agregar distancias\n8) Ver impacto ambiental\n9) Deshacer ultima solicitud de un viaje\n10) Cerrar sesión"
+    OPCIONES_ADMIN = {"1": (crear_viaje, admin, viajes, matriz, transportes), "2": (ver_viajes, viajes),"3": (iniciar_viaje, viajes, paradas),"4": (registrar_entrega, viajes, comprobantes), "5": (registrar_incidente, viajes, incidentes),"6": (ver_matriz, matriz),"7": (agregar_distancias, matriz), "8": (ver_impacto_ambiental, viajes), "9": (deshacer_ultima_solicitud, viajes), "10": (cerrar_sesion, contexto)}
 
     print(MENSAJE_ADMIN)
-    correr_menu(MENSAJE_MENU_ADMIN, OPCIONES_ADMIN, "8")
+    correr_menu(MENSAJE_MENU_ADMIN, OPCIONES_ADMIN, "10")
 
 
 def menu_solicitante(solicitante, contexto):
@@ -293,11 +312,11 @@ def menu_solicitante(solicitante, contexto):
     lista_articulos = contexto[Articulo]
 
     MENSAJE_SOLIC = f"MENU SOLICITANTE: {solicitante}"
-    MENSAJE_MENU_SOLIC = "\n1) Crear Solicitud\n2) Ver viajes\n3) Ver matriz\n4) Cerrar sesión"
-    OPCIONES_SOLIC = {"1": (crear_solicitud, solicitante, viajes, matriz, solicitudes, lista_articulos), "2": (ver_viajes, viajes),"3": (ver_matriz, matriz), "4": (cerrar_sesion, contexto)}
+    MENSAJE_MENU_SOLIC = "\n1) Crear Solicitud\n2) Ver viajes\n3) Ver matriz\n4) Ver impacto ambiental\n5) Cerrar sesión"
+    OPCIONES_SOLIC = {"1": (crear_solicitud, solicitante, viajes, matriz, solicitudes, lista_articulos), "2": (ver_viajes, viajes),"3": (ver_matriz, matriz), "4": (ver_impacto_ambiental, viajes), "5": (cerrar_sesion, contexto)}
 
     print(MENSAJE_SOLIC)
-    correr_menu(MENSAJE_MENU_SOLIC, OPCIONES_SOLIC, "4")
+    correr_menu(MENSAJE_MENU_SOLIC, OPCIONES_SOLIC, "5")
 
 
 def main():

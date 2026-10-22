@@ -5,3 +5,4 @@ id,id_solicitud,fecha_hora,receptor,monto,Comprobante
 4,7,2026-10-20 10:00:00,Rec 1,2500.0
 5,9,2026-10-21 09:30:00,Receptor 3,800.0
 6,3,2027-03-01 11:00:00,Receptor 1,100.0
+7,16,2026-10-25 10:00:00,Ana,100.0

@@ -17,3 +17,9 @@ id,descripcion,peso,volumen,Articulo
 16,Computadora,1.5,0.08
 19,Cuadernos,1.0,0.1
 20,Cartucheraa,0.5,0.6
+21,Caja,2.0,1.0
+22,Bolsa,1.0,0.5
+23,Caja,3.0,0.3
+24,Sobre,0.2,0.1
+25,Libro,1.0,0.1
+26,Sobre,0.6,0.2
