@@ -65,6 +65,6 @@ class Solicitante(Persona):
         super().__init__(nombre, dni, telefono)
 
     @staticmethod
-    def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, *articulos):
+    def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, *articulos, solicitud_anterior = None):
         Validaciones.validar_instancia(viaje, clase = Viaje, nombre = "viaje")
-        return viaje.crear_solicitud(destino, ventana_inicio, ventana_fin, *articulos)
+        return viaje.crear_solicitud(destino, ventana_inicio, ventana_fin, *articulos, solicitud_anterior = solicitud_anterior)

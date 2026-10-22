@@ -10,6 +10,7 @@ from viaje import Viaje
 from comprobante import Comprobante
 from incidente import Incidente
 from parada import Parada
+from zona import Zona
 
 
 def pedir_texto(mensaje, mensajeUnico = None):
@@ -186,6 +187,83 @@ def deshacer_ultima_solicitud(viajes):
                 print(f"Error al agregar al nuevo viaje ({e}): La solicitud quedará pendiente de asignación.")
 # A futuro, asginar viaje a las solicitudes pendientes de asignación?
 
+def elegir_solicitud_anterior(viaje):
+    solicitudes = viaje.getter_solicitudes()
+    if not solicitudes:
+        return None
+    print("Posicion de la nueva solicitud:\n0) Al final\n1) Al inicio")
+    for i in range(len(solicitudes)):
+        print(f"{i + 2}) Despues de {solicitudes[i]}")
+    opcion = pedir_entero("Numero: ")
+    if opcion == 1:
+        return True
+    if 2 <= opcion < len(solicitudes) + 2:
+        return solicitudes[opcion - 2]
+    if opcion != 0:
+        print("Numero invalido, se agrega al final.")
+    return None
+
+
+def quitar_solicitud(viajes):
+    viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
+    if viaje is not None:
+        solicitudes = viaje.getter_solicitudes()
+        if not solicitudes:
+            print("El viaje todavia no tiene solicitudes.")
+            return None
+        print("Elegi la solicitud a quitar:")
+        for i in range(len(solicitudes)):
+            print(f"{i}) {solicitudes[i]}")
+        opcion = pedir_entero("Numero: ")
+        if 0 <= opcion < len(solicitudes):
+            viaje.quitar_solicitud(solicitudes[opcion])
+            print(f"Solicitud quitada: {solicitudes[opcion]}")
+        else:
+            print("Numero invalido.")
+
+
+def rehacer_solicitud(viajes):
+    viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
+    if viaje is not None:
+        solicitud = viaje.rehacer()
+        print(f"Cambio rehecho sobre la solicitud: {solicitud}")
+
+
+def crear_zona(matriz, zonas):
+    nombre = pedir_texto("Nombre de la zona: ")
+    zona = Zona(nombre)
+    otra = "s"
+    while otra == "s":
+        zona.agregar_ubicacion(pedir_texto("Ubicacion que pertenece a la zona: "))
+        otra = input("Agregar otra ubicacion? (s/n): ").strip().lower()
+    matriz.agregar_zona(zona)
+    zonas.append(zona)
+    print(f"ZONA CREADA: {zona}: {sorted(zona.getter_ubicaciones())}")
+
+
+def ver_zonas(zonas):
+    print("\nLISTA DE ZONAS: ")
+    for zona in zonas:
+        print(f"{zona}: {sorted(zona.getter_ubicaciones())}")
+
+
+def habilitar_zona(viajes, zonas):
+    if not zonas:
+        print("Todavia no hay ninguna zona creada.")
+        return None
+    viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
+    if viaje is not None:
+        print("Elegi la zona a habilitar para el transporte del viaje:")
+        for i in range(len(zonas)):
+            print(f"{i}) {zonas[i]}")
+        opcion = pedir_entero("Numero: ")
+        if 0 <= opcion < len(zonas):
+            viaje.getter_transporte().habilitar_zona(zonas[opcion])
+            print(f"Zona {zonas[opcion]} habilitada para el transporte del viaje {viaje.getter_id()}")
+        else:
+            print("Numero invalido.")
+
+
 def iniciar_viaje(viajes, paradas):
     viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
     if viaje is not None:
@@ -267,7 +345,8 @@ def crear_solicitud(solicitante, viajes, matriz, solicitudes, lista_articulos):
     ventana_inicio = pedir_fecha_hora("Inicio de la ventana")
     ventana_fin = pedir_fecha_hora("Fin de la ventana")
     articulos = pedir_articulos()
-    solicitud = solicitante.crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, *articulos)
+    solicitud_anterior = elegir_solicitud_anterior(viaje)
+    solicitud = solicitante.crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, *articulos, solicitud_anterior = solicitud_anterior)
     solicitudes.append(solicitud)
     lista_articulos.extend(articulos)
     print(f"Solicitud agregada: {solicitud}")
@@ -295,13 +374,14 @@ def menu_administrador(admin, contexto):
     paradas = contexto[Parada]
     comprobantes = contexto[Comprobante]
     incidentes = contexto[Incidente]
+    zonas = contexto[Zona]
 
     MENSAJE_ADMIN = f"MENU ADMINISTRADOR: {admin}"
-    MENSAJE_MENU_ADMIN = "\n1) Crear viaje\n2) Ver viajes\n3) Iniciar viaje\n4) Registrar entrega\n5) Registrar incidente\n6) Ver matriz\n7) Agregar distancias\n8) Ver impacto ambiental\n9) Deshacer ultima solicitud de un viaje\n10) Cerrar sesión"
-    OPCIONES_ADMIN = {"1": (crear_viaje, admin, viajes, matriz, transportes), "2": (ver_viajes, viajes),"3": (iniciar_viaje, viajes, paradas),"4": (registrar_entrega, viajes, comprobantes), "5": (registrar_incidente, viajes, incidentes),"6": (ver_matriz, matriz),"7": (agregar_distancias, matriz), "8": (ver_impacto_ambiental, viajes), "9": (deshacer_ultima_solicitud, viajes), "10": (cerrar_sesion, contexto)}
+    MENSAJE_MENU_ADMIN = "\n1) Crear viaje\n2) Ver viajes\n3) Iniciar viaje\n4) Registrar entrega\n5) Registrar incidente\n6) Ver matriz\n7) Agregar distancias\n8) Ver impacto ambiental\n9) Deshacer ultima solicitud de un viaje\n10) Rehacer solicitud de un viaje\n11) Quitar solicitud de un viaje\n12) Crear zona\n13) Ver zonas\n14) Habilitar zona a un transporte\n15) Cerrar sesión"
+    OPCIONES_ADMIN = {"1": (crear_viaje, admin, viajes, matriz, transportes), "2": (ver_viajes, viajes),"3": (iniciar_viaje, viajes, paradas),"4": (registrar_entrega, viajes, comprobantes), "5": (registrar_incidente, viajes, incidentes),"6": (ver_matriz, matriz),"7": (agregar_distancias, matriz), "8": (ver_impacto_ambiental, viajes), "9": (deshacer_ultima_solicitud, viajes), "10": (rehacer_solicitud, viajes), "11": (quitar_solicitud, viajes), "12": (crear_zona, matriz, zonas), "13": (ver_zonas, zonas), "14": (habilitar_zona, viajes, zonas), "15": (cerrar_sesion, contexto)}
 
     print(MENSAJE_ADMIN)
-    correr_menu(MENSAJE_MENU_ADMIN, OPCIONES_ADMIN, "10")
+    correr_menu(MENSAJE_MENU_ADMIN, OPCIONES_ADMIN, "15")
 
 
 def menu_solicitante(solicitante, contexto):

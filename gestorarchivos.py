@@ -10,6 +10,7 @@ from comprobante import Comprobante
 from incidente import Incidente
 from parada import Parada
 from viaje import Viaje
+from zona import Zona
 
 class GestorArchivos:
     @staticmethod
@@ -41,7 +42,7 @@ class GestorArchivos:
     def leer_todos():
         # articulos, matriz, personas, transportes, solicitudes, comprobantes, incidentes, paradas, viajes
         carpeta = Path('archivos persistencia')
-        rutas = {'articulos.csv': Articulo, 'matriz.csv': MatrizDistancia, 'personas.csv': Persona, 'transportes.csv': Transporte, 'solicitudes.csv': Solicitud, 'comprobantes.csv': Comprobante, 'incidentes.csv': Incidente, 'paradas.csv': Parada, 'viajes.csv': Viaje}
+        rutas = {'zonas.csv': Zona, 'articulos.csv': Articulo, 'matriz.csv': MatrizDistancia, 'personas.csv': Persona, 'transportes.csv': Transporte, 'solicitudes.csv': Solicitud, 'comprobantes.csv': Comprobante, 'incidentes.csv': Incidente, 'paradas.csv': Parada, 'viajes.csv': Viaje}
         contexto = {}
         for ruta, clase in rutas.items():
             lineas = GestorArchivos.leer(carpeta / ruta)
@@ -51,10 +52,11 @@ class GestorArchivos:
     @staticmethod
     def guardar_todos(contexto):
         carpeta = Path('archivos persistencia')
-        rutas = {'articulos.csv': (Articulo, "id,descripcion,peso,volumen,Articulo"),
+        rutas = {'zonas.csv': (Zona, "id,nombre,ubicaciones,Zona"),
+                  'articulos.csv': (Articulo, "id,descripcion,peso,volumen,Articulo"),
                   'matriz.csv': (MatrizDistancia, "origen,destino,km,MatrizDistancia"), 
                   'personas.csv': (Persona, "clase,nombre,dni,telefono,Persona"), 
-                  'transportes.csv': (Transporte, "tipo,id,peso_max,volumen,velocidad,costo_km,costo_parada,factor_ambiental,Transporte"), 
+                  'transportes.csv': (Transporte, "tipo,id,peso_max,volumen,velocidad,costo_km,costo_parada,factor_ambiental,zonas_habilitadas,Transporte"), 
                   'solicitudes.csv': (Solicitud, "id,destino,ventana_inicio,ventana_fin,articulos,id_viaje,id_comprobante,Solicitud"), 
                   'comprobantes.csv': (Comprobante, "id,id_solicitud,fecha_hora,receptor,monto,Comprobante"), 
                   'incidentes.csv': (Incidente, "id,tipo,fecha,descripcion,clase_afectado,id_afectado,detalles,Incidente"), 

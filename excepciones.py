@@ -35,6 +35,12 @@ class VentanaIncumplidaError(FlotaError):
     def __init__(self, lugar, hora_llegada, hora_fin):
         super().__init__(f"Ventana incumplida: Se llegará a {lugar} a las {hora_llegada} superando el límite {hora_fin}")
 
+class ZonaRestringidaError(FlotaError):
+    def __init__(self, zonas):
+        self.zonas = set(zonas)
+        nombres = ", ".join(sorted(map(str, self.zonas)))
+        super().__init__(f"Zona restringida: El itinerario atraviesa zonas no habilitadas para el transporte: {nombres}")
+
 class TransicionIlegalError(FlotaError):
     pass
 class EstadoInvalidoError(TransicionIlegalError):

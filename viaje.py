@@ -9,7 +9,7 @@ from lista_enlazada import ListaEnlazada
 from politicaordenamiento import Vecinos, VentanasTiempo
 from validaciones import Validaciones
 from matrizdistancia import MatrizDistancia
-from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, RutaIncompletaError, TransicionIlegalError
+from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, RutaIncompletaError, TransicionIlegalError, ZonaRestringidaError
 
 class Viaje:
     curr_id = 0
@@ -33,10 +33,10 @@ class Viaje:
         if self.estado != estado_requerido:
             raise EstadoInvalidoError(accion, self.estado)
 
-    def crear_solicitud(self, destino, ventana_inicio, ventana_fin, *articulos):
+    def crear_solicitud(self, destino, ventana_inicio, ventana_fin, *articulos, solicitud_anterior = None):
         self._validar_estado("crear_solicitud", "PLANIFICADO")
         nueva_solicitud = Solicitud(destino, ventana_inicio, ventana_fin, *articulos)
-        self.agregar_solicitud(nueva_solicitud)
+        self.agregar_solicitud(nueva_solicitud, solicitud_anterior)
         return nueva_solicitud
 
     def validar_recorrido(self, recorrido, indice = 0, horario = None, ubicacion = None):
@@ -56,6 +56,15 @@ class Viaje:
         if llegada < solicitud.getter_ventana_inicio():
             llegada = solicitud.getter_ventana_inicio()
         return self.validar_recorrido(recorrido, indice = indice + 1, horario = llegada + timedelta(minutes=10), ubicacion = lugar)
+
+    def validar_zonas(self, recorrido = None):
+        if recorrido is None:
+            recorrido = self.solicitudes
+        zonas_visitadas = set().union(*map(lambda s: self.matriz.zonas_de(s.getter_destino()), recorrido))
+        no_habilitadas = zonas_visitadas - self.transporte.getter_zonas_habilitadas()
+        if no_habilitadas:
+            raise ZonaRestringidaError(no_habilitadas)
+        return True
 
     def distancia_total(self, ubicacion, restantes):
         if not restantes:
@@ -178,6 +187,7 @@ class Viaje:
         else:
             raise DatoInvalidoError(f"La solicitud {solicitud_anterior.getter_id()} no pertenece al viaje {self.id}")
         self.validar_recorrido(orden)
+        self.validar_zonas(orden)
 
     def _validar_quitar(self, solicitud):
         orden = list(self.solicitudes)
@@ -294,7 +304,7 @@ class Viaje:
         self._validar_estado("iniciar_viaje", "PLANIFICADO")
         if self.solicitudes.es_vacia():
             raise ViajeVacioError("Viaje Vacio: El viaje aún no tiene solicitudes")
-        
+        self.validar_zonas()
         orden_paradas = self.ordenar_solicitudes()
         self.solicitudes = ListaEnlazada()
         for solicitud in orden_paradas:

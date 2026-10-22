@@ -1,4 +1,5 @@
 from validaciones import Validaciones
+from zona import Zona
 from excepciones import ExcesoPesoError, DatoInvalidoError
 
 class Transporte:
@@ -10,6 +11,7 @@ class Transporte:
         self.volumen = Validaciones.validar_numero(volumen, nombre = "volumen")
         self.velocidad = Validaciones.validar_numero(velocidad, nombre = "velocidad")
         self.costo_parada = Validaciones.validar_numero(costo_parada, nombre = "costo_parada")
+        self.zonas_habilitadas = set()
 
         Transporte.curr_id += 1      
         self.id = Transporte.curr_id
@@ -24,6 +26,16 @@ class Transporte:
         self._validar_carga(distancia, peso)
         return self.factor_ambiental * distancia
     
+    def habilitar_zona(self, zona):
+        self.zonas_habilitadas.add(Validaciones.validar_instancia(zona, clase = Zona, nombre = "zona"))
+        return None
+
+    def permite_zona(self, zona):
+        return zona in self.zonas_habilitadas
+
+    def getter_zonas_habilitadas(self):
+        return self.zonas_habilitadas.copy()
+
     def getter_peso_max(self):
         return self.peso_max
     
@@ -43,11 +55,12 @@ class Transporte:
         return self.__class__.__name__
 
     def serializar(self):
-        return [self.__class__.__name__, self.id, self.peso_max, self.volumen, self.velocidad, self.costo_km, self.costo_parada, self.factor_ambiental]
+        return [self.__class__.__name__, self.id, self.peso_max, self.volumen, self.velocidad, self.costo_km, self.costo_parada, self.factor_ambiental, ",".join(map(lambda z: str(z.id), sorted(self.zonas_habilitadas, key = lambda z: z.id)))]
 
     @staticmethod
     def deserializar(archivo, contexto = None):
         clases = {"Furgoneta": Furgoneta, "Motocicleta": Motocicleta, "Camion": Camion}
+        zonas = dict(map(lambda zona: (zona.getter_id(), zona), (contexto or {}).get(Zona, [])))
         transportes = []
         for fila in archivo[1:]:
             if fila and fila[0] == "Transporte":
@@ -61,6 +74,9 @@ class Transporte:
                 transportes.append(transporte)
             elif fila:
                 raise DatoInvalidoError(f"Tipo de transporte desconocido: {fila[1]}")
+            if fila and fila[0] in ("Transporte", *clases) and len(fila) > 8:
+                for i in filter(None, fila[8].split(",")):
+                    transportes[-1].habilitar_zona(zonas[int(i)])
         Transporte.curr_id = max(Transporte.curr_id, 0, *map(lambda t: t.id, transportes))
         return transportes
 
