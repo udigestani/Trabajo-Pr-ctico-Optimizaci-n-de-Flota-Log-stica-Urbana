@@ -29,3 +29,6 @@ class Pila:
             actual = actual.siguiente
     def get_longitud(self):
         return self.longitud
+    def borrar_todo(self):
+        self.longitud = 0
+        self.tope = None

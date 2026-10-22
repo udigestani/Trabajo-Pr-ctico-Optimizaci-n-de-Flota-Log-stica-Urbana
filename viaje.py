@@ -5,6 +5,7 @@ from solicitud import Solicitud
 from parada import Parada
 from cola import Cola
 from pila import Pila
+from lista_enlazada import ListaEnlazada
 from politicaordenamiento import Vecinos, VentanasTiempo
 from validaciones import Validaciones
 from matrizdistancia import MatrizDistancia
@@ -19,11 +20,12 @@ class Viaje:
         self.matriz = Validaciones.validar_instancia(matriz, clase = MatrizDistancia, nombre = "matriz")
         self.estado = "PLANIFICADO"
 
-        self.solicitudes = []
+        self.solicitudes = ListaEnlazada()
         self.incidentes = []
         self.paradas = Cola()
         self.paradas_resueltas = []
         self.historial_solicitudes = Pila()
+        self.solicitudes_deshechas = Pila()
         Viaje.curr_id += 1
         self.id = Viaje.curr_id
 
@@ -64,13 +66,13 @@ class Viaje:
 
     def costo_total(self, orden = None):
         if orden is None:
-            orden = self.solicitudes
+            orden = list(self.solicitudes)
         costo_distancia = self.distancia_total(self.deposito, orden) * self.transporte.getter_costo_km()
         costo_paradas = len(orden) * self.transporte.getter_costo_parada()
         return costo_distancia + costo_paradas
 
     def impacto_ambiental(self):
-        return self.transporte.calcular_impacto_ambiental(self.distancia_total(self.deposito, self.solicitudes), self.getter_peso())
+        return self.transporte.calcular_impacto_ambiental(self.distancia_total(self.deposito, list(self.solicitudes)), self.getter_peso())
     def getter_estado(self):
         return self.estado
     def getter_peso(self):
@@ -82,7 +84,7 @@ class Viaje:
     def getter_volumen_max(self):
         return self.transporte.getter_volumen()
     def getter_solicitudes(self):
-        return self.solicitudes.copy()
+        return list(self.solicitudes)
     def getter_id(self):
         return self.id
     def getter_transporte(self):
@@ -101,8 +103,33 @@ class Viaje:
         return None
 
     def serializar(self):
-        return [self.id, self.transporte.id, self.deposito, self.horario, self.estado, ",".join(map(lambda x: str(x.id), self.solicitudes)), ",".join(map(lambda x: str(x.id), self.incidentes)), ",".join(map(lambda x: str(x.id), self.paradas)), ",".join(map(lambda x: str(x.id), self.paradas_resueltas)), ",".join((list(map(lambda x: str(x.id), self.historial_solicitudes)))[::-1])]
-    
+        return [self.id, self.transporte.id, self.deposito, self.horario, self.estado, ",".join(map(lambda x: str(x.id), self.solicitudes)), ",".join(map(lambda x: str(x.id), self.incidentes)), ",".join(map(lambda x: str(x.id), self.paradas)), ",".join(map(lambda x: str(x.id), self.paradas_resueltas)), ",".join(list(map(Viaje._serializar_cambio, self.historial_solicitudes))[::-1])]
+
+    @staticmethod
+    def _serializar_cambio(cambio):
+        solicitud, accion, anterior = cambio
+        if anterior is True:
+            anterior = "inicio"
+        elif anterior is None or anterior is False:
+            anterior = ""
+        else:
+            anterior = anterior.getter_id()
+        return f"{accion}:{solicitud.getter_id()}:{anterior}"
+
+    @staticmethod
+    def _deserializar_cambio(texto, solicitudes):
+        partes = texto.split(":")
+        if len(partes) == 1:
+            return (solicitudes[int(partes[0])], "Agregar", None)
+        accion, id_solicitud, anterior = partes
+        if anterior == "inicio":
+            anterior = True
+        elif anterior == "":
+            anterior = None
+        else:
+            anterior = solicitudes[int(anterior)]
+        return (solicitudes[int(id_solicitud)], accion, anterior)
+
     @classmethod
     def deserializar(cls, archivo, contexto):
         matriz = contexto[MatrizDistancia]
@@ -113,26 +140,24 @@ class Viaje:
         viajes = []
         for fila in archivo[1:]:
             if fila:
-                ids = list(map(lambda celda: list(map(int, filter(None, celda.split(",")))), fila[5:10]))
+                ids = list(map(lambda celda: list(map(int, filter(None, celda.split(",")))), fila[5:9]))
                 viaje = cls(transportes[int(fila[1])], fila[2], datetime.fromisoformat(fila[3]), matriz)
                 viaje.id = int(fila[0])
                 viaje.estado = fila[4]
-                viaje.solicitudes = list(map(lambda i: solicitudes[i], ids[0]))
-                for solicitud in viaje.solicitudes:
-                    solicitud.setter_viaje(viaje)
+                for i in ids[0]:
+                    viaje.solicitudes.agregar_al_final(solicitudes[i])
+                    solicitudes[i].setter_viaje(viaje)
                 viaje.incidentes = list(map(lambda i: incidentes[i], ids[1]))
                 for i in ids[2]:
                     viaje.paradas.encolar(paradas[i])
                 viaje.paradas_resueltas = list(map(lambda i: paradas[i], ids[3]))
-                for i in ids[4]:
-                    viaje.historial_solicitudes.apilar(solicitudes[i])
+                for texto in filter(None, fila[9].split(",")):
+                    viaje.historial_solicitudes.apilar(cls._deserializar_cambio(texto, solicitudes))
                 viajes.append(viaje)
         cls.curr_id = max(cls.curr_id, 0, *map(lambda v: v.id, viajes))
         return viajes
 
-    def agregar_solicitud(self, nueva_solicitud):
-        Validaciones.validar_instancia(nueva_solicitud, clase = Solicitud, nombre = "solicitud")
-        self._validar_estado("agregar_solicitud", "PLANIFICADO")
+    def _validar_agregar(self, nueva_solicitud, solicitud_anterior):
         if nueva_solicitud in self.solicitudes or nueva_solicitud.esta_asignada() or nueva_solicitud.esta_entregada():
             raise SolicitudDuplicadaError(nueva_solicitud.getter_id())
         if nueva_solicitud.getter_destino() == self.deposito:
@@ -143,20 +168,87 @@ class Viaje:
             raise ExcesoPesoError(self.getter_peso_max(), peso)
         elif volumen > self.getter_volumen_max():
             raise ExcesoVolumenError(self.getter_volumen_max(), volumen)
-        self.validar_recorrido([*self.solicitudes, nueva_solicitud])
-        self.solicitudes.append(nueva_solicitud)
-        self.historial_solicitudes.apilar(nueva_solicitud)
-        nueva_solicitud.setter_viaje(self)
+        orden = list(self.solicitudes)
+        if solicitud_anterior is None:
+            orden.append(nueva_solicitud)
+        elif solicitud_anterior is True:
+            orden.insert(0, nueva_solicitud)
+        elif solicitud_anterior in orden:
+            orden.insert(orden.index(solicitud_anterior) + 1, nueva_solicitud)
+        else:
+            raise DatoInvalidoError(f"La solicitud {solicitud_anterior.getter_id()} no pertenece al viaje {self.id}")
+        self.validar_recorrido(orden)
+
+    def _validar_quitar(self, solicitud):
+        orden = list(self.solicitudes)
+        if solicitud not in orden:
+            raise DatoInvalidoError(f"La solicitud {solicitud.getter_id()} no pertenece al viaje {self.id}")
+        posicion = orden.index(solicitud)
+        orden.remove(solicitud)
+        self.validar_recorrido(orden)
+        return orden[posicion - 1] if posicion > 0 else True
+
+    def _colocar_solicitud(self, solicitud, solicitud_anterior):
+        if solicitud_anterior is None:
+            self.solicitudes.agregar_al_final(solicitud)
+        elif solicitud_anterior is True:
+            self.solicitudes.agregar_al_inicio(solicitud)
+        else:
+            self.solicitudes.insertar_despues(solicitud_anterior, solicitud)
+        solicitud.setter_viaje(self)
+
+    def _sacar_solicitud(self, solicitud):
+        self.solicitudes.eliminar(solicitud)
+        solicitud.setter_viaje(None)
+
+    def agregar_solicitud(self, nueva_solicitud, solicitud_anterior = None):
+        Validaciones.validar_instancia(nueva_solicitud, clase = Solicitud, nombre = "solicitud")
+        self._validar_estado("agregar_solicitud", "PLANIFICADO")
+        self._validar_agregar(nueva_solicitud, solicitud_anterior)
+        self.solicitudes_deshechas.borrar_todo()
+        self._colocar_solicitud(nueva_solicitud, solicitud_anterior)
+        self.historial_solicitudes.apilar((nueva_solicitud, "Agregar", solicitud_anterior))
+        return None
+
+    def quitar_solicitud(self, solicitud):
+        Validaciones.validar_instancia(solicitud, clase = Solicitud, nombre = "solicitud")
+        self._validar_estado("quitar_solicitud", "PLANIFICADO")
+        anterior = self._validar_quitar(solicitud)
+        self.solicitudes_deshechas.borrar_todo()
+        self._sacar_solicitud(solicitud)
+        self.historial_solicitudes.apilar((solicitud, "Quitar", anterior))
         return None
 
     def deshacer_ultima_solicitud(self):
         self._validar_estado("deshacer_ultima_solicitud", "PLANIFICADO")
         if self.historial_solicitudes.esVacia():
             raise ViajeVacioError("Viaje Vacio: No hay solicitudes para deshacer")
-        solicitud = self.historial_solicitudes.desapilar()
-        self.solicitudes.remove(solicitud)
-        solicitud.setter_viaje(None)
+        (solicitud, accion, anterior) = self.historial_solicitudes.ver_tope()
+        if accion == "Agregar":
+            self._validar_quitar(solicitud)
+            self._sacar_solicitud(solicitud)
+        else:
+            self._validar_agregar(solicitud, anterior)
+            self._colocar_solicitud(solicitud, anterior)
+        self.historial_solicitudes.desapilar()
+        self.solicitudes_deshechas.apilar((solicitud, accion, anterior))
         return solicitud
+
+    def rehacer(self):
+        self._validar_estado("rehacer solicitud", "PLANIFICADO")
+        if self.solicitudes_deshechas.esVacia():
+            raise ViajeVacioError("Viaje Vacio: No hay solicitudes para rehacer")
+        (solicitud, accion, anterior) = self.solicitudes_deshechas.ver_tope()
+        if accion == "Agregar":
+            self._validar_agregar(solicitud, anterior)
+            self._colocar_solicitud(solicitud, anterior)
+        else:
+            anterior = self._validar_quitar(solicitud)
+            self._sacar_solicitud(solicitud)
+        self.solicitudes_deshechas.desapilar()
+        self.historial_solicitudes.apilar((solicitud, accion, anterior))
+        return solicitud
+
     def __str__(self):
         tipo_transporte = self.transporte.getter_tipo()
         fecha = self.horario.strftime('%Y-%m-%d %H:%M')
@@ -175,18 +267,18 @@ class Viaje:
         opciones = {}
         error_solicitudes = None
         try:
-            opciones[tuple(self.solicitudes)] = self.costo_total(self.solicitudes)
+            opciones[tuple(self.solicitudes)] = self.costo_total()
         except RutaIncompletaError as error:
             error_solicitudes = error
         try:
-            orden = tuple(Vecinos.sugerir_orden(self.deposito, self.solicitudes, self.matriz))
+            orden = tuple(Vecinos.sugerir_orden(self.deposito, list(self.solicitudes), self.matriz))
             self.validar_recorrido(orden)
             costo = self.costo_total(orden)
             opciones[orden] = costo
         except (VentanaIncumplidaError, RutaIncompletaError):
             pass
         try:
-            orden = tuple(VentanasTiempo.sugerir_orden(self.deposito, self.solicitudes, self.matriz))
+            orden = tuple(VentanasTiempo.sugerir_orden(self.deposito, list(self.solicitudes), self.matriz))
             self.validar_recorrido(orden)
             costo = self.costo_total(orden)
             opciones[orden] = costo
@@ -200,16 +292,21 @@ class Viaje:
     # DESDE ACÁ EL VIAJE ESTÁ INICIADO
     def iniciar_viaje(self):
         self._validar_estado("iniciar_viaje", "PLANIFICADO")
-        if not self.solicitudes:
+        if self.solicitudes.es_vacia():
             raise ViajeVacioError("Viaje Vacio: El viaje aún no tiene solicitudes")
         
-        self.solicitudes = self.ordenar_solicitudes()
+        orden_paradas = self.ordenar_solicitudes()
+        self.solicitudes = ListaEnlazada()
+        for solicitud in orden_paradas:
+            self.solicitudes.agregar_al_final(solicitud)
+        self.historial_solicitudes.borrar_todo()
+        self.solicitudes_deshechas.borrar_todo()
         self.paradas = Cola()
         self.paradas_resueltas = []
         horario = self.horario
         ubicacion = self.deposito
-        for i in range(len(self.solicitudes)):
-            solicitud = self.solicitudes[i]
+        for i in range(len(orden_paradas)):
+            solicitud = orden_paradas[i]
             lugar = solicitud.getter_destino()
             distancia = self.matriz.obtener_distancia(ubicacion, lugar)
             tiempo_hrs = distancia / self.transporte.getter_velocidad()
