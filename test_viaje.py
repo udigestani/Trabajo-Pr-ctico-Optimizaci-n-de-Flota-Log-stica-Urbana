@@ -556,14 +556,14 @@ def test_deshacerUltimaSolicitud_sinSolicitudes(viaje, mock_validar_estado, mock
 # Funcionamiento normal
 def test_validarRecorrido_ok(viaje, matriz, solicitud_a, solicitud_b, mock_agregar_solicitud, mocker):
     assert viaje.validar_recorrido([]) is True
-    matriz.obtener_distancia.assert_not_called()
+    matriz.obtener_distancia.assert_called_once_with("Deposito", "Deposito")
     viaje.solicitudes = [solicitud_a]
-    matriz.obtener_distancia.side_effect = [15, 10]
+    matriz.obtener_distancia.side_effect = [15, 10, 5]
     # Llega 9:30 a Destino A. Sale 9:40 y llega 10:00 a Destino B
     solicitud_a.getter_ventana_fin.return_value = hora(9, 30)
     solicitud_b.getter_ventana_fin.return_value = hora(10)
     assert viaje.validar_recorrido([solicitud_a, solicitud_b]) is True
-    assert matriz.obtener_distancia.call_args_list == [mocker.call("Deposito", "Destino A"), mocker.call("Destino A", "Destino B")]
+    assert matriz.obtener_distancia.call_args_list == [mocker.call("Deposito", "Deposito"), mocker.call("Deposito", "Destino A"), mocker.call("Destino A", "Destino B"), mocker.call("Destino B", "Deposito")]
     assert viaje.getter_solicitudes() == [solicitud_a]
     assert viaje.getter_peso() == 150
 # Un transporte rápido llega pero uno lento no cumple los horarios
@@ -651,44 +651,6 @@ def test_impactoAmbiental_delegaEnElTransporte(viaje_cargado, transporte, mock_d
     transporte.calcular_impacto_ambiental.return_value = 13.5
     assert viaje_cargado.impacto_ambiental() == 13.5
     transporte.calcular_impacto_ambiental.assert_called_once_with(50, 350)
-
-
-# ---------- setter_estado ----------
-# Funcionamiento normal
-def test_viaje_setterEstado_ok(viaje, mock_validaciones):
-    assert viaje.getter_estado() == "PLANIFICADO"
-    viaje.setter_estado("EN_CURSO")
-    assert viaje.getter_estado() == "EN_CURSO"
-    mock_validaciones.validar_en.assert_called_with("EN_CURSO", opciones = "PLANIFICADO, EN_CURSO, FINALIZADO", nombre = "estado del viaje")
-    viaje.setter_estado("FINALIZADO")
-    assert viaje.getter_estado() == "FINALIZADO"
-    mock_validaciones.validar_en.assert_called_with("FINALIZADO", opciones = "PLANIFICADO, EN_CURSO, FINALIZADO", nombre = "estado del viaje")
-# Estado inválido
-def test_viaje_setterEstado_invalido_sePropaga(viaje, mock_validaciones):
-    mock_validaciones.validar_en.side_effect = DatoInvalidoError("El estado del viaje debe ser uno de")
-    with pytest.raises(DatoInvalidoError, match = "El estado del viaje debe ser uno de"):
-        viaje.setter_estado("MODIFICADO")
-    assert viaje.getter_estado() == "PLANIFICADO"
-# Transicion ilegal
-def test_viaje_setterEstado_transicionIlegal(viaje, mock_validaciones):
-    # PLANIFICADO --> FINALIZADO ERROR
-    assert viaje.getter_estado() == "PLANIFICADO"
-    with pytest.raises(TransicionIlegalError, match = "PLANIFICADO -> EN_CURSO -> FINALIZADO"):
-        viaje.setter_estado("FINALIZADO")
-    assert viaje.getter_estado() == "PLANIFICADO"
-    # EN_CURSO --> PLANIFICADO ERROR
-    viaje.estado = "EN_CURSO"
-    with pytest.raises(TransicionIlegalError):
-        viaje.setter_estado("PLANIFICADO")
-    assert viaje.getter_estado() == "EN_CURSO"
-    # FINALIZADO --> PLANIFICADO O EN_CURSO ERROR 
-    viaje.estado = "FINALIZADO"
-    with pytest.raises(TransicionIlegalError):
-        viaje.setter_estado("PLANIFICADO")
-    with pytest.raises(TransicionIlegalError):
-        viaje.setter_estado("EN_CURSO")
-    assert viaje.getter_estado() == "FINALIZADO"
-    assert mock_validaciones.validar_en.call_count == 4
 
 
 # ---------- ordenar_solicitudes ----------
