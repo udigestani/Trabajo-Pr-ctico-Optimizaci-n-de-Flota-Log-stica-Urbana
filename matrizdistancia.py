@@ -6,6 +6,7 @@ class MatrizDistancia:
         self.distancias = {}
 
     def agregar_distancia(self, id_origen, id_destino, km):
+        id_origen, id_destino = Validaciones.validar_str(id_origen, id_destino, nombre = "ubicación")
         Validaciones.validar_numero(km, cero = True, nombre = "distancia")
         if id_origen == id_destino and km != 0:
             raise DatoInvalidoError(f"La distancia entre {id_origen} y si mismo debe ser 0")

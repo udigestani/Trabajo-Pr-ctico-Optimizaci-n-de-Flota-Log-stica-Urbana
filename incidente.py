@@ -35,12 +35,12 @@ class Incidente:
 
     def serializar(self):
         detalles = ",".join(map(lambda par: f"{par[0]}={par[1]}", self.detalles.items()))
-        return [self.id, self.tipo, self.fecha, self.descripcion, self.afectado.__class__.__name__, self.afectado.id, detalles]
+        return [self.id, self.tipo, self.fecha, self.descripcion, self.afectado.__class__.__name__, self.afectado.getter_id(), detalles]
 
     @classmethod
     def deserializar(cls, archivo, contexto):
-        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto[Solicitud]))
-        dicc_transportes = dict(map(lambda tr: (tr.id, tr), contexto[Transporte]))
+        dicc_solicitudes = dict(map(lambda sol: (sol.getter_id(), sol), contexto[Solicitud]))
+        dicc_transportes = dict(map(lambda tr: (tr.getter_id(), tr), contexto[Transporte]))
         incidentes = []
         for fila in archivo[1:]:
             if fila:

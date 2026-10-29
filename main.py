@@ -112,9 +112,9 @@ def ver_registrados(personas):
 def iniciar_sesion(personas, contexto):
     print("\nINICIANDO SESION")
     dni = pedir_entero("Ingrese su número de DNI: ")
-    while dni not in Persona.dnis_registrados:
+    while dni not in Persona.getter_dnis_registrados():
         dni = pedir_entero("Ingrese su número de DNI: ", mensajeUnico = "DNI Incorrecto: Volver a intentar o probar creando una cuenta")
-    persona = next(filter(lambda p: p.dni == dni, personas), None)
+    persona = next(filter(lambda p: p.getter_dni() == dni, personas), None)
     if isinstance(persona, Administrador):
         menu_administrador(persona, contexto)
     elif isinstance(persona, Solicitante):
@@ -253,7 +253,7 @@ def crear_solicitud(solicitante, viajes, matriz, solicitudes, lista_articulos):
     if viaje is None:
         return None
     # Después veamos si esto lo sacamos, no es muy necesario lo de alcanzables porque el sistema valida e intenta con Vecinos y VentanaTiempo
-    lugar = viaje.deposito
+    lugar = viaje.getter_deposito()
     if viaje.getter_solicitudes():
         lugar = viaje.getter_solicitudes()[-1].getter_destino()
     opciones = alcanzables(lugar, matriz)

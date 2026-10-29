@@ -85,6 +85,8 @@ class Viaje:
         return self.solicitudes.copy()
     def getter_id(self):
         return self.id
+    def getter_deposito(self):
+        return self.deposito
     def getter_transporte(self):
         return self.transporte
     def getter_incidentes(self):
@@ -101,12 +103,12 @@ class Viaje:
         return None
 
     def serializar(self):
-        return [self.id, self.transporte.id, self.deposito, self.horario, self.estado, ",".join(map(lambda x: str(x.id), self.solicitudes)), ",".join(map(lambda x: str(x.id), self.incidentes)), ",".join(map(lambda x: str(x.id), self.paradas)), ",".join(map(lambda x: str(x.id), self.paradas_resueltas)), ",".join((list(map(lambda x: str(x.id), self.historial_solicitudes)))[::-1])]
+        return [self.id, self.transporte.getter_id(), self.deposito, self.horario, self.estado, ",".join(map(lambda x: str(x.getter_id()), self.solicitudes)), ",".join(map(lambda x: str(x.getter_id()), self.incidentes)), ",".join(map(lambda x: str(x.getter_id()), self.paradas)), ",".join(map(lambda x: str(x.getter_id()), self.paradas_resueltas)), ",".join((list(map(lambda x: str(x.getter_id()), self.historial_solicitudes)))[::-1])]
     
     @classmethod
     def deserializar(cls, archivo, contexto):
         matriz = contexto[MatrizDistancia]
-        transportes = dict(map(lambda tr: (tr.id, tr), contexto[Transporte]))
+        transportes = dict(map(lambda tr: (tr.getter_id(), tr), contexto[Transporte]))
         solicitudes = dict(map(lambda sol: (sol.getter_id(), sol), contexto[Solicitud]))
         incidentes = dict(map(lambda inc: (inc.getter_id(), inc), contexto.get(Incidente, [])))
         paradas = dict(map(lambda par: (par.getter_id(), par), contexto.get(Parada, [])))

@@ -34,7 +34,7 @@ class Comprobante:
     def deserializar(cls, archivo, contexto):
         # Dicc {id: sol}
         from solicitud import Solicitud
-        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto[Solicitud]))
+        dicc_solicitudes = dict(map(lambda sol: (sol.getter_id(), sol), contexto[Solicitud]))
         # Deserializamos los comprobantes
         comprobantes = []
         for fila in archivo[1:]:

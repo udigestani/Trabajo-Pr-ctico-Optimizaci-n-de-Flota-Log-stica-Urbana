@@ -43,8 +43,8 @@ class Parada:
 
     @classmethod
     def deserializar(cls, archivo, contexto):
-        dicc_solicitudes = dict(map(lambda sol: (sol.id, sol), contexto[Solicitud]))
-        dicc_comprobantes = dict(map(lambda comp: (comp.id, comp), contexto[Comprobante]))
+        dicc_solicitudes = dict(map(lambda sol: (sol.getter_id(), sol), contexto[Solicitud]))
+        dicc_comprobantes = dict(map(lambda comp: (comp.getter_id(), comp), contexto[Comprobante]))
         paradas = []
         for fila in archivo[1:]:
             if fila:
@@ -56,7 +56,8 @@ class Parada:
                 if fila[6]:
                     parada.comprobante = dicc_comprobantes[int(fila[6])]
                 if fila[5] != "PENDIENTE":
-                    parada.setter_estado(fila[5])
+                    estado = Validaciones.validar_en(fila[5], opciones = "FALLIDA, ENTREGADA", nombre = "estado")
+                    parada.setter_estado(estado)
                 paradas.append(parada)
         cls.curr_id = max(cls.curr_id, 0, *map(lambda p: p.id, paradas))
         return paradas

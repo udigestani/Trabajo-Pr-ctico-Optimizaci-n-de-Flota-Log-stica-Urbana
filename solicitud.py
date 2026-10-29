@@ -24,12 +24,12 @@ class Solicitud:
             id_comprobante = self.comprobante.getter_id()
         else:
             id_comprobante = ""
-        return [self.id, self.destino, self.ventana_inicio, self.ventana_fin, ",".join(map(lambda x: str(x.id), self.articulos)), id_viaje, id_comprobante]
+        return [self.id, self.destino, self.ventana_inicio, self.ventana_fin, ",".join(map(lambda x: str(x.getter_id()), self.articulos)), id_viaje, id_comprobante]
 
     @classmethod
     def deserializar(cls, archivo, contexto):
         # Dicc {id: art}
-        dicc_articulos = dict(map(lambda art: (art.id, art), contexto[Articulo]))
+        dicc_articulos = dict(map(lambda art: (art.getter_id(), art), contexto[Articulo]))
         # Deserializamos las solicitudes
         solicitudes = []
         for fila in archivo[1:]:

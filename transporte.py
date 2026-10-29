@@ -24,6 +24,9 @@ class Transporte:
         self._validar_carga(distancia, peso)
         return self.factor_ambiental * distancia
     
+    def getter_id(self):
+        return self.id
+    
     def getter_peso_max(self):
         return self.peso_max
     
