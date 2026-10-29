@@ -23,3 +23,5 @@ id,descripcion,peso,volumen,Articulo
 24,Sobre,0.2,0.1
 25,Libro,1.0,0.1
 26,Sobre,0.6,0.2
+27,Libros,0.5,0.2
+29,Caja,1.0,0.8

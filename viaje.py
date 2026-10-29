@@ -241,8 +241,9 @@ class Viaje:
             self.finalizar_viaje()
         return comprobante
 
-    def registrar_incidente(self, tipo, fecha, descripcion, **detalles):
+    def registrar_incidente(self, tipo, fecha, descripcion, alcance = "FALLA", **detalles):
         self._validar_estado("registrar_incidente", "EN_CURSO")
+        Validaciones.validar_en(alcance, opciones = "FALLA, SOLICITUD, TRANSPORTE", nombre = "alcance del incidente")
         if self.paradas_resueltas:
             inicio = self.paradas_resueltas[-1].getter_hora_real()
             Validaciones.validar_ventana(inicio, fecha, nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha del incidente")
@@ -251,13 +252,18 @@ class Viaje:
         if self.paradas.esVacia():
             raise SinParadasPendientesError("registrar_incidente")
         parada_pendiente = self.paradas.frente()
-        incidente = Incidente(tipo, fecha, descripcion, parada_pendiente.getter_solicitud(), **detalles)
-        parada_pendiente.setter_estado("FALLIDA")
-        parada_pendiente.setter_hora_real(fecha)
+        if alcance == "TRANSPORTE":
+            afectado = self.transporte
+        else:
+            afectado = parada_pendiente.getter_solicitud()
+        incidente = Incidente(tipo, fecha, descripcion, afectado, **detalles)
         self.incidentes.append(incidente)
-        self.paradas_resueltas.append(self.paradas.desencolar())
-        if self.paradas.esVacia():
-            self.finalizar_viaje()
+        if alcance == "FALLA":
+            parada_pendiente.setter_estado("FALLIDA")
+            parada_pendiente.setter_hora_real(fecha)
+            self.paradas_resueltas.append(self.paradas.desencolar())
+            if self.paradas.esVacia():
+                self.finalizar_viaje()
         return incidente
 
     def finalizar_viaje(self):

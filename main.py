@@ -209,6 +209,7 @@ def registrar_entrega(viajes, comprobantes):
 
 def registrar_incidente(viajes, incidentes):
     OPCIONES_INCIDENTES = {"1": "DAÑO", "2": "AUSENTE", "3": "RETRASO"}
+    OPCIONES_ALCANCE = {"1": "FALLA", "2": "SOLICITUD", "3": "TRANSPORTE"}
     viaje = elegir_viaje(viajes, estados = {"EN_CURSO"})
     if viaje is not None:
         print("Tipo de incidente:\n1) DAÑO\n2) AUSENTE\n3) RETRASO")
@@ -216,7 +217,10 @@ def registrar_incidente(viajes, incidentes):
         tipo = OPCIONES_INCIDENTES.get(opcion, "DAÑO")
         fecha = pedir_fecha_hora("Fecha y hora del incidente")
         descripcion = pedir_texto("Descripcion: ")
-        incidente = viaje.registrar_incidente(tipo, fecha, descripcion)
+        print("Alcance del incidente:\n1) Falla la entrega de la parada actual\n2) Afecta a la solicitud actual, pero se puede entregar\n3) Afecta al transporte")
+        opcion_alcance = input("Opcion: ").strip()
+        alcance = OPCIONES_ALCANCE.get(opcion_alcance, "FALLA")
+        incidente = viaje.registrar_incidente(tipo, fecha, descripcion, alcance)
         incidentes.append(incidente)
         print(f"Incidente registrado: {incidente}")
 
