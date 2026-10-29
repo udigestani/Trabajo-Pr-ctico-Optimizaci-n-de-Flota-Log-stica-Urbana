@@ -242,8 +242,9 @@ class Viaje:
         return comprobante
 
     def registrar_incidente(self, tipo, fecha, descripcion, alcance = "FALLA", **detalles):
+        ALCANCES = ("FALLA", "SOLICITUD", "TRANSPORTE")
         self._validar_estado("registrar_incidente", "EN_CURSO")
-        Validaciones.validar_en(alcance, opciones = "FALLA, SOLICITUD, TRANSPORTE", nombre = "alcance del incidente")
+        Validaciones.validar_en(alcance, opciones = ALCANCES, nombre = "alcance del incidente")
         if self.paradas_resueltas:
             inicio = self.paradas_resueltas[-1].getter_hora_real()
             Validaciones.validar_ventana(inicio, fecha, nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha del incidente")
@@ -271,4 +272,3 @@ class Viaje:
         if not self.paradas.esVacia():
             raise ViajeIncompletoError(self.paradas.get_longitud())
         self.estado = "FINALIZADO"
-        print(f"VIAJE FINALIZADO: {self.deposito}", self.paradas_resueltas, sep=", ")

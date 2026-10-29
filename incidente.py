@@ -51,7 +51,6 @@ class Incidente:
                 detalles = {}
                 if fila[6]:
                     detalles = dict(map(lambda x: x.split("="), fila[6].split(",")))
-                # detalles = dict(par.split("=", 1) for par in fila[6].split(",") if par)
                 incidente = Incidente(fila[1], datetime.fromisoformat(fila[2]), fila[3], afectado, **detalles)
                 incidente.id = int(fila[0])
                 incidentes.append(incidente)

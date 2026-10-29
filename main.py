@@ -10,6 +10,7 @@ from viaje import Viaje
 from comprobante import Comprobante
 from incidente import Incidente
 from parada import Parada
+from excepciones import FlotaError
 
 
 def pedir_texto(mensaje, mensajeUnico = None):
@@ -62,6 +63,29 @@ def elegir_transporte(mostrar_opciones = False):
         return OPCIONES_TRANSPORTE[opcion]()  
     print("Opcion invalida, elegi 1, 2 o 3.")
     return elegir_transporte()
+
+
+def elegir_transporte_registrado(transportes):
+    if not transportes:
+        print("Todavia no hay ningun transporte registrado. Registra uno primero.")
+        return None
+    print("Elegi el transporte:")
+    for i in range(len(transportes)):
+        print(f"{i}) {transportes[i]}")
+    opcion = pedir_entero("Numero: ")
+    if 0 <= opcion < len(transportes):
+        return transportes[opcion]
+    print("Numero invalido.")
+    return None
+
+
+def elegir_opcion(mensaje, opciones):
+    print(mensaje)
+    opcion = input("Opcion: ").strip()
+    if opcion in opciones:
+        return opciones[opcion]
+    print("Opcion invalida.")
+    return elegir_opcion(mensaje, opciones)
 
 
 def alcanzables(lugar, matriz):
@@ -146,12 +170,19 @@ def salir(contexto):
     print("\nSALIENDO...")
 
 
-def crear_viaje(admin, viajes, matriz, transportes):
+def registrar_transporte(transportes):
     transporte = elegir_transporte(mostrar_opciones = True)
+    transportes.append(transporte)
+    print(f"TRANSPORTE REGISTRADO: {transporte}")
+
+
+def crear_viaje(admin, viajes, matriz, transportes):
+    transporte = elegir_transporte_registrado(transportes)
+    if transporte is None:
+        return None
     deposito = pedir_texto("Nombre del deposito: ")
     horario = pedir_fecha_hora("Horario de salida")
     viaje = admin.crear_viaje(transporte, deposito, horario, matriz)
-    transportes.append(transporte)
     viajes.append(viaje)
     print(f"VIAJE CREADO: {viaje}")
 
@@ -161,12 +192,32 @@ def ver_viajes(viajes):
     for viaje in viajes:
         print(viaje)
 
+
+def ver_detalle_viaje(viajes):
+    viaje = elegir_viaje(viajes)
+    if viaje is not None:
+        print(f"\n{viaje}")
+        print("Solicitudes (en orden):")
+        for solicitud in viaje.getter_solicitudes():
+            print(f"  {solicitud}")
+        if viaje.getter_paradas():
+            print("Paradas:")
+            for parada in viaje.getter_paradas():
+                print(f"  {parada}")
+        print(f"Distancia total (con regreso al deposito): {viaje.distancia_total()} km")
+        print(f"Costo total: ${viaje.costo_total()}")
+
+
 def ver_impacto_ambiental(viajes):
     print("\nIMPACTO AMBIENTAL DE CADA VIAJE: ")
     total = 0
     for viaje in viajes:
-        print(f"Viaje {viaje.getter_id()}: {viaje.impacto_ambiental():.2f}{Transporte.UNIDAD_IMPACTO}")
-        total += viaje.impacto_ambiental()
+        try:
+            impacto = viaje.impacto_ambiental()
+            total += impacto
+            print(f"Viaje {viaje.getter_id()}: {impacto:.2f}{Transporte.UNIDAD_IMPACTO}")
+        except FlotaError as e:
+            print(f"Viaje {viaje.getter_id()}: no se pudo calcular ({e})")
     print(f"\nEl impacto ambiental total de los viajes es de {total:.2f}{Transporte.UNIDAD_IMPACTO}")
 
 def deshacer_ultima_solicitud(viajes):
@@ -184,6 +235,25 @@ def deshacer_ultima_solicitud(viajes):
             except Exception as e:
                 print(f"Error al agregar al nuevo viaje ({e}): La solicitud quedará pendiente de asignación.")
 
+
+def asignar_solicitud_pendiente(viajes, solicitudes):
+    pendientes = list(filter(lambda s: not s.esta_asignada() and not s.esta_entregada(), solicitudes))
+    if not pendientes:
+        print("No hay solicitudes pendientes de asignación.")
+        return None
+    print("Solicitudes pendientes de asignación:")
+    for i in range(len(pendientes)):
+        print(f"{i}) {pendientes[i]}")
+    opcion = pedir_entero("Numero: ")
+    if not 0 <= opcion < len(pendientes):
+        print("Numero invalido.")
+        return None
+    viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
+    if viaje is not None:
+        viaje.agregar_solicitud(pendientes[opcion])
+        print(f"Solicitud agregada al viaje: {pendientes[opcion]}")
+
+
 def iniciar_viaje(viajes, paradas):
     viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
     if viaje is not None:
@@ -192,6 +262,11 @@ def iniciar_viaje(viajes, paradas):
         for parada in viaje.getter_paradas():
             print(f"  {parada}")
             paradas.append(parada)
+
+
+def avisar_si_finalizo(viaje):
+    if viaje.getter_estado() == "FINALIZADO":
+        print(f"VIAJE FINALIZADO: {viaje.getter_deposito()}, {viaje.getter_paradas()}")
 
 
 def registrar_entrega(viajes, comprobantes):
@@ -203,6 +278,7 @@ def registrar_entrega(viajes, comprobantes):
         comprobante = viaje.registrar_entrega(hora_real, receptor, monto)
         comprobantes.append(comprobante)
         print(f"Comprobante generado: {comprobante}")
+        avisar_si_finalizo(viaje)
 
 
 def registrar_incidente(viajes, incidentes):
@@ -221,6 +297,7 @@ def registrar_incidente(viajes, incidentes):
         incidente = viaje.registrar_incidente(tipo, fecha, descripcion, alcance)
         incidentes.append(incidente)
         print(f"Incidente registrado: {incidente}")
+        avisar_si_finalizo(viaje)
 
 
 def ver_matriz(matriz):
@@ -254,7 +331,6 @@ def crear_solicitud(solicitante, viajes, matriz, solicitudes, lista_articulos):
     viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
     if viaje is None:
         return None
-    # Después veamos si esto lo sacamos, no es muy necesario lo de alcanzables porque el sistema valida e intenta con Vecinos y VentanaTiempo
     lugar = viaje.getter_deposito()
     if viaje.getter_solicitudes():
         lugar = viaje.getter_solicitudes()[-1].getter_destino()
@@ -296,13 +372,14 @@ def menu_administrador(admin, contexto):
     paradas = contexto[Parada]
     comprobantes = contexto[Comprobante]
     incidentes = contexto[Incidente]
+    solicitudes = contexto[Solicitud]
 
     MENSAJE_ADMIN = f"MENU ADMINISTRADOR: {admin}"
-    MENSAJE_MENU_ADMIN = "\n1) Crear viaje\n2) Ver viajes\n3) Iniciar viaje\n4) Registrar entrega\n5) Registrar incidente\n6) Ver matriz\n7) Agregar distancias\n8) Ver impacto ambiental\n9) Deshacer ultima solicitud de un viaje\n10) Cerrar sesión"
-    OPCIONES_ADMIN = {"1": (crear_viaje, admin, viajes, matriz, transportes), "2": (ver_viajes, viajes),"3": (iniciar_viaje, viajes, paradas),"4": (registrar_entrega, viajes, comprobantes), "5": (registrar_incidente, viajes, incidentes),"6": (ver_matriz, matriz),"7": (agregar_distancias, matriz), "8": (ver_impacto_ambiental, viajes), "9": (deshacer_ultima_solicitud, viajes), "10": (cerrar_sesion, contexto)}
+    MENSAJE_MENU_ADMIN = "\n1) Crear viaje\n2) Ver viajes\n3) Iniciar viaje\n4) Registrar entrega\n5) Registrar incidente\n6) Ver matriz\n7) Agregar distancias\n8) Ver impacto ambiental\n9) Deshacer ultima solicitud de un viaje\n10) Ver detalle de un viaje (distancia y costo)\n11) Registrar transporte\n12) Asignar solicitud pendiente a un viaje\n13) Cerrar sesión"
+    OPCIONES_ADMIN = {"1": (crear_viaje, admin, viajes, matriz, transportes), "2": (ver_viajes, viajes),"3": (iniciar_viaje, viajes, paradas),"4": (registrar_entrega, viajes, comprobantes), "5": (registrar_incidente, viajes, incidentes),"6": (ver_matriz, matriz),"7": (agregar_distancias, matriz), "8": (ver_impacto_ambiental, viajes), "9": (deshacer_ultima_solicitud, viajes), "10": (ver_detalle_viaje, viajes), "11": (registrar_transporte, transportes), "12": (asignar_solicitud_pendiente, viajes, solicitudes), "13": (cerrar_sesion, contexto)}
 
     print(MENSAJE_ADMIN)
-    correr_menu(MENSAJE_MENU_ADMIN, OPCIONES_ADMIN, "10")
+    correr_menu(MENSAJE_MENU_ADMIN, OPCIONES_ADMIN, "13")
 
 
 def menu_solicitante(solicitante, contexto):
