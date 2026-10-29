@@ -1,10 +1,30 @@
 clase,nombre,dni,telefono,Persona
+Solicitante,Persona 13,32437109,1113580237
+Solicitante,Persona 7,21289595,1106172835
+Solicitante,Persona 19,43484623,1120987639
+Solicitante,Persona 3,13857919,1101234567
+Administrador,Persona 11,28721271,1111111103
+Solicitante,Persona 16,37910866,1117283938
 Solicitante,Uriel,47348001,1178787878
-Solicitante,Juan,47348002,1178787872
-Administrador,Massimo,47348003,1178787871
-Administrador,Manuel,47348004,1178787870
+Administrador,Admin,1122112,1122112211
+Administrador,Persona 5,17573757,1103703701
+Solicitante,Persona 9,25005433,1108641969
+Solicitante,Persona 12,30579190,1112345670
+Administrador,Persona 14,34295028,1114814804
+Administrador,Persona 17,39768785,1118518505
 Solicitante,Bruno,46800900,1234567893
-Administrador,Ninfa,39000444,8765432187
+Administrador,Massimo,47348003,1178787871
+Administrador,Persona 2,12000000,1100000000
+Solicitante,Persona 4,15715838,1102469134
+Solicitante,Persona 6,19431676,1104938268
+Administrador,Persona 8,23147514,1107407402
+Solicitante,Persona 10,26863352,1109876536
 Administrador,Leandro,30111222,1145678901
 Solicitante,Persona 1,31222333,1156789012
-Administrador,Admin,1122112,1122112211
+Solicitante,Persona 15,36052947,1116049371
+Administrador,Ninfa,39000444,8765432187
+Solicitante,Persona 18,41626704,1119753072
+Administrador,Persona 20,45342542,1122222206
+Solicitante,Persona 21,47200461,1123456773
+Solicitante,Juan,47348002,1178787872
+Administrador,Manuel,47348004,1178787870

@@ -132,12 +132,27 @@ def ver_registrados(personas):
         print(persona)
 
 
+def buscar_persona():
+    dni = pedir_entero("DNI de la persona a buscar: ")
+    registrados = Persona.getter_dnis_registrados()
+    persona, saltos = registrados.buscar_con_saltos(dni)
+    if persona is None:
+        print(f"No hay ninguna persona registrada con el DNI {dni}.")
+        print(f"Saltos entre nodos hasta llegar a un lugar vacío: {saltos}")
+        return None
+    print(f"\nPERSONA ENCONTRADA ({persona.__class__.__name__}): {persona}")
+    print(f"Teléfono: {persona.getter_telefono()}")
+    print(f"Saltos entre nodos desde la raíz: {saltos}")
+
+
 def iniciar_sesion(personas, contexto):
     print("\nINICIANDO SESION")
     dni = pedir_entero("Ingrese su número de DNI: ")
-    while dni not in Persona.getter_dnis_registrados():
+    registrados = Persona.getter_dnis_registrados()
+    persona = registrados.buscar(registrados.getter_raiz(), dni)
+    while persona is None:
         dni = pedir_entero("Ingrese su número de DNI: ", mensajeUnico = "DNI Incorrecto: Volver a intentar o probar creando una cuenta")
-    persona = next(filter(lambda p: p.getter_dni() == dni, personas), None)
+        persona = registrados.buscar(registrados.getter_raiz(), dni)
     if isinstance(persona, Administrador):
         menu_administrador(persona, contexto)
     elif isinstance(persona, Solicitante):
@@ -375,11 +390,11 @@ def menu_administrador(admin, contexto):
     solicitudes = contexto[Solicitud]
 
     MENSAJE_ADMIN = f"MENU ADMINISTRADOR: {admin}"
-    MENSAJE_MENU_ADMIN = "\n1) Crear viaje\n2) Ver viajes\n3) Iniciar viaje\n4) Registrar entrega\n5) Registrar incidente\n6) Ver matriz\n7) Agregar distancias\n8) Ver impacto ambiental\n9) Deshacer ultima solicitud de un viaje\n10) Ver detalle de un viaje (distancia y costo)\n11) Registrar transporte\n12) Asignar solicitud pendiente a un viaje\n13) Cerrar sesión"
-    OPCIONES_ADMIN = {"1": (crear_viaje, admin, viajes, matriz, transportes), "2": (ver_viajes, viajes),"3": (iniciar_viaje, viajes, paradas),"4": (registrar_entrega, viajes, comprobantes), "5": (registrar_incidente, viajes, incidentes),"6": (ver_matriz, matriz),"7": (agregar_distancias, matriz), "8": (ver_impacto_ambiental, viajes), "9": (deshacer_ultima_solicitud, viajes), "10": (ver_detalle_viaje, viajes), "11": (registrar_transporte, transportes), "12": (asignar_solicitud_pendiente, viajes, solicitudes), "13": (cerrar_sesion, contexto)}
+    MENSAJE_MENU_ADMIN = "\n1) Crear viaje\n2) Ver viajes\n3) Iniciar viaje\n4) Registrar entrega\n5) Registrar incidente\n6) Ver matriz\n7) Agregar distancias\n8) Ver impacto ambiental\n9) Deshacer ultima solicitud de un viaje\n10) Ver detalle de un viaje (distancia y costo)\n11) Registrar transporte\n12) Asignar solicitud pendiente a un viaje\n13) Buscar persona por DNI\n14) Cerrar sesión"
+    OPCIONES_ADMIN = {"1": (crear_viaje, admin, viajes, matriz, transportes), "2": (ver_viajes, viajes),"3": (iniciar_viaje, viajes, paradas),"4": (registrar_entrega, viajes, comprobantes), "5": (registrar_incidente, viajes, incidentes),"6": (ver_matriz, matriz),"7": (agregar_distancias, matriz), "8": (ver_impacto_ambiental, viajes), "9": (deshacer_ultima_solicitud, viajes), "10": (ver_detalle_viaje, viajes), "11": (registrar_transporte, transportes), "12": (asignar_solicitud_pendiente, viajes, solicitudes), "13": (buscar_persona,), "14": (cerrar_sesion, contexto)}
 
     print(MENSAJE_ADMIN)
-    correr_menu(MENSAJE_MENU_ADMIN, OPCIONES_ADMIN, "13")
+    correr_menu(MENSAJE_MENU_ADMIN, OPCIONES_ADMIN, "14")
 
 
 def menu_solicitante(solicitante, contexto):

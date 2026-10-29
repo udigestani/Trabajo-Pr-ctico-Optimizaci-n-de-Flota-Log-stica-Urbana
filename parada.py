@@ -63,7 +63,7 @@ class Parada:
                     parada.comprobante = dicc_comprobantes[int(fila[6])]
                 if fila[5] != "PENDIENTE":
                     estado = Validaciones.validar_en(fila[5], opciones = "FALLIDA, ENTREGADA", nombre = "estado")
-                    parada.setter_estado(estado)
+                    parada.estado = estado
                 paradas.append(parada)
         cls.curr_id = max(cls.curr_id, 0, *map(lambda p: p.id, paradas))
         return paradas

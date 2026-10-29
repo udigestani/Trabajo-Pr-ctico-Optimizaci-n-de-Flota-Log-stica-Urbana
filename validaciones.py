@@ -1,6 +1,7 @@
 from excepciones import DatoInvalidoError, DNIInvalidoError, VentanaInvalidaError
 from math import isfinite
 from datetime import datetime
+from arbol import Arbol
 
 class Validaciones:
     @staticmethod
@@ -67,8 +68,8 @@ class Validaciones:
     def validar_dni(dni, registrados = None):
         Validaciones.validar_digitos(dni, (7, 8), "DNI")
         if registrados is None:
-            registrados = set()
-        if dni in registrados:
+            registrados = Arbol()
+        if registrados.buscar(registrados.getter_raiz(), dni):
             raise DNIInvalidoError(dni)
         return dni
 

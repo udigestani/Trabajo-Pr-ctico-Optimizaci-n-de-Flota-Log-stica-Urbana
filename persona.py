@@ -1,14 +1,15 @@
 from viaje import Viaje
 from validaciones import Validaciones
 from excepciones import DatoInvalidoError
+from arbol import Arbol
 
 class Persona:
-    dnis_registrados = set()
+    dnis_registrados = Arbol()
     def __init__(self, nombre, dni, telefono):
         self.nombre = Validaciones.validar_str(nombre, nombre = "nombre")
         self.dni = Validaciones.validar_dni(dni, Persona.dnis_registrados)
         self.telefono = Validaciones.validar_digitos(telefono, 10, "teléfono")
-        Persona.dnis_registrados.add(self.dni)
+        Persona.dnis_registrados.insertar(self.dni, self)
 
     def getter_nombre(self):
         return self.nombre
@@ -19,10 +20,10 @@ class Persona:
 
     @classmethod
     def getter_dnis_registrados(cls):
-        return cls.dnis_registrados.copy()
+        return cls.dnis_registrados
     @classmethod
     def limpiar_dnis_registrados(cls):
-        cls.dnis_registrados.clear()
+        cls.dnis_registrados.setter_raiz(None)
         return None
 
     def __str__(self):
@@ -41,6 +42,7 @@ class Persona:
 
     @staticmethod
     def deserializar(archivo, contexto = None):
+        Persona.limpiar_dnis_registrados()
         clases = {"Persona": Persona, "Administrador": Administrador, "Solicitante": Solicitante}
         personas = []
         for fila in archivo[1:]:
