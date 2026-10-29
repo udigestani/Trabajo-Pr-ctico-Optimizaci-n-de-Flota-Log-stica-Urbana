@@ -43,6 +43,7 @@ class Viaje:
         if ubicacion is None:
             ubicacion = self.deposito
         if indice == len(recorrido):
+            self.matriz.obtener_distancia(ubicacion, self.deposito)
             return True
         solicitud = recorrido[indice]
         lugar = solicitud.getter_destino()
@@ -55,7 +56,11 @@ class Viaje:
             llegada = solicitud.getter_ventana_inicio()
         return self.validar_recorrido(recorrido, indice = indice + 1, horario = llegada + timedelta(minutes=10), ubicacion = lugar)
 
-    def distancia_total(self, ubicacion, restantes):
+    def distancia_total(self, ubicacion = None, restantes = None):
+        if ubicacion is None:
+            ubicacion = self.deposito
+        if restantes is None:
+            restantes = self.solicitudes
         if not restantes:
             return self.matriz.obtener_distancia(ubicacion, self.deposito)
         lugar = restantes[0].getter_destino()
@@ -177,8 +182,9 @@ class Viaje:
         opciones = {}
         error_solicitudes = None
         try:
+            self.validar_recorrido(self.solicitudes)
             opciones[tuple(self.solicitudes)] = self.costo_total(self.solicitudes)
-        except RutaIncompletaError as error:
+        except (VentanaIncumplidaError, RutaIncompletaError) as error:
             error_solicitudes = error
         try:
             orden = tuple(Vecinos.sugerir_orden(self.deposito, self.solicitudes, self.matriz))
@@ -204,7 +210,6 @@ class Viaje:
         self._validar_estado("iniciar_viaje", "PLANIFICADO")
         if not self.solicitudes:
             raise ViajeVacioError("Viaje Vacio: El viaje aún no tiene solicitudes")
-        
         self.solicitudes = self.ordenar_solicitudes()
         self.paradas = Cola()
         self.paradas_resueltas = []
