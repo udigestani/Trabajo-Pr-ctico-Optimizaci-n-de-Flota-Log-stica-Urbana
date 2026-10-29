@@ -6,6 +6,7 @@ from excepciones import DatoInvalidoError, RutaIncompletaError
 def mock_validaciones(mocker):
     mock = mocker.patch("matrizdistancia.Validaciones")
     mock.validar_numero.side_effect = lambda valor, **kwargs: valor
+    mock.validar_str.side_effect = lambda *valores, **kwargs: valores
     return mock
 
 @pytest.fixture

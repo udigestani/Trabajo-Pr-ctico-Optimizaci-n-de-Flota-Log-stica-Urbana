@@ -59,7 +59,7 @@ def test_transporte_validaciones(mock_validaciones):
     mock_validaciones.validar_numero.assert_any_call(10, nombre = "volumen")
     mock_validaciones.validar_numero.assert_any_call(50, nombre = "velocidad")
     mock_validaciones.validar_numero.assert_any_call(2, nombre = "costo_km")
-    mock_validaciones.validar_numero.assert_any_call(5, nombre = "costo_parada")
+    mock_validaciones.validar_numero.assert_any_call(5, cero = True, nombre = "costo_parada")
     mock_validaciones.validar_numero.assert_any_call(0.5, nombre = "factor_ambiental")
 
 def test_transporte_errorValidacion(mock_validaciones):

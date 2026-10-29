@@ -63,7 +63,7 @@ def test_camion_validaciones(mock_validaciones):
     mock_validaciones.validar_numero.assert_any_call(20, nombre = "volumen")
     mock_validaciones.validar_numero.assert_any_call(25, nombre = "velocidad")
     mock_validaciones.validar_numero.assert_any_call(3.5, nombre = "costo_km")
-    mock_validaciones.validar_numero.assert_any_call(10, nombre = "costo_parada")
+    mock_validaciones.validar_numero.assert_any_call(10, cero = True, nombre = "costo_parada")
     mock_validaciones.validar_numero.assert_any_call(1, nombre = "factor_ambiental")
 
 # Impacto ambiental
