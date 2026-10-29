@@ -18,8 +18,14 @@ class Parada:
         self.id = Parada.curr_id
         self.estado = "PENDIENTE"
 
+    def _validar_turno(self, accion):
+        viaje = self.solicitud.getter_viaje()
+        if viaje is None or not viaje.es_parada_actual(self):
+            raise EstadoInvalidoError(accion, "la parada no es la actual de un viaje en curso")
+
     def generar_comprobante(self, receptor, fecha, monto):
         if self.estado == "PENDIENTE":
+            self._validar_turno("generar_comprobante")
             if self.solicitud.getter_comprobante():
                 raise EstadoInvalidoError("generar_comprobante", "la solicitud ya tiene comprobante")
             self.comprobante = Comprobante(self.solicitud, fecha, receptor, monto)
@@ -76,6 +82,7 @@ class Parada:
     def setter_estado(self, estado):
         if self.estado != "PENDIENTE":
             raise EstadoInvalidoError(f"settear estado a {estado}", f"la parada es {self.estado}")
+        self._validar_turno(f"settear estado a {estado}")
         if estado == "ENTREGADA" and self.comprobante is None:
             raise EstadoInvalidoError("settear parada a ENTREGADA", "no tiene comprobante")
         self.estado = Validaciones.validar_en(estado, opciones = "FALLIDA, ENTREGADA", nombre = "estado")
@@ -83,6 +90,7 @@ class Parada:
     def setter_hora_real(self, hora_real):
         if self.estado == "PENDIENTE":
             raise EstadoInvalidoError("settear hora_real", "de la parada es PENDIENTE")
+        self._validar_turno("settear hora_real")
         self.hora_real = Validaciones.validar_fecha(hora_real, nombre = "hora_real")
         return None
     def getter_solicitud(self):

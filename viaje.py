@@ -100,12 +100,8 @@ class Viaje:
         return self.paradas_resueltas + self.paradas_pendientes()
     def paradas_pendientes(self):
         return list(self.paradas)
-    def setter_estado(self, estado):
-        estado = Validaciones.validar_en(estado, opciones = "PLANIFICADO, EN_CURSO, FINALIZADO", nombre = "estado del viaje")
-        if self.estado == "FINALIZADO" or (self.estado == "EN_CURSO" and estado != "FINALIZADO") or (self.estado == "PLANIFICADO" and estado != "EN_CURSO"):
-            raise TransicionIlegalError("El ciclo de un viaje es PLANIFICADO -> EN_CURSO -> FINALIZADO")
-        self.estado = estado
-        return None
+    def es_parada_actual(self, parada):
+        return self.estado == "EN_CURSO" and not self.paradas.esVacia() and self.paradas.frente() is parada
 
     def serializar(self):
         return [self.id, self.transporte.getter_id(), self.deposito, self.horario, self.estado, ",".join(map(lambda x: str(x.getter_id()), self.solicitudes)), ",".join(map(lambda x: str(x.getter_id()), self.incidentes)), ",".join(map(lambda x: str(x.getter_id()), self.paradas)), ",".join(map(lambda x: str(x.getter_id()), self.paradas_resueltas)), ",".join((list(map(lambda x: str(x.getter_id()), self.historial_solicitudes)))[::-1])]
