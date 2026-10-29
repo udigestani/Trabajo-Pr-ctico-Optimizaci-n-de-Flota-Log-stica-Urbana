@@ -108,7 +108,6 @@ def ver_registrados(personas):
         print(persona)
 
 
-# Ver si dnis_registrados es mejor dicc o set
 def iniciar_sesion(personas, contexto):
     print("\nINICIANDO SESION")
     dni = pedir_entero("Ingrese su número de DNI: ")
@@ -184,7 +183,6 @@ def deshacer_ultima_solicitud(viajes):
                 nuevo_viaje.agregar_solicitud(solicitud)
             except Exception as e:
                 print(f"Error al agregar al nuevo viaje ({e}): La solicitud quedará pendiente de asignación.")
-# A futuro, asginar viaje a las solicitudes pendientes de asignación?
 
 def iniciar_viaje(viajes, paradas):
     viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
@@ -292,7 +290,6 @@ def correr_menu(mensaje_menu, opciones, opcion_salida):
 
 
 def menu_administrador(admin, contexto):
-    # Después ver cuales funcionalidades faltan / sobran
     viajes = contexto[Viaje]
     matriz = contexto[MatrizDistancia]
     transportes = contexto[Transporte]
@@ -309,7 +306,6 @@ def menu_administrador(admin, contexto):
 
 
 def menu_solicitante(solicitante, contexto):
-    # Después ver cuales funcionalidades faltan / sobran
     viajes = contexto[Viaje]
     matriz = contexto[MatrizDistancia]
     solicitudes = contexto[Solicitud]

@@ -9,7 +9,7 @@ class Solicitud:
     def __init__(self, destino, ventana_inicio, ventana_fin, *articulos):
         self.articulos = Validaciones.validar_coleccion(articulos, tipo = tuple, clase = Articulo, nombre = "lista de artículos")
         self.destino = Validaciones.validar_str(destino, nombre = "destino")
-        self.ventana_inicio, self.ventana_fin = Validaciones.validar_ventana(ventana_inicio, ventana_fin) # hice esta validacion y cambie que los parametroz sea ventana_inicio y ventana_fin, asumiendo que entran 2 parametros y no como una tupla de ultima lo cambiamos dsp tipo antes habia ventana horaria, entonces deberia ser tipo ventana_horaria = (ventana_inicio, ventana_fin), pero queda mas prolijo asi
+        self.ventana_inicio, self.ventana_fin = Validaciones.validar_ventana(ventana_inicio, ventana_fin)
         self.viaje = None
         self.comprobante = None
         Solicitud.curr_id += 1

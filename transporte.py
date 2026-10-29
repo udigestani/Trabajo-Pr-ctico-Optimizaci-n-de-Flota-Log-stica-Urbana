@@ -64,7 +64,7 @@ class Transporte:
                 transporte.id = int(fila[1])
                 transportes.append(transporte)
             elif fila:
-                raise DatoInvalidoError(f"Tipo de transporte desconocido: {fila[1]}")
+                raise DatoInvalidoError(f"Tipo de transporte desconocido: {fila[0]}")
         Transporte.curr_id = max(Transporte.curr_id, 0, *map(lambda t: t.id, transportes))
         return transportes
 

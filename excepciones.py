@@ -1,5 +1,3 @@
-# Definir excepciones propias para datos inválidos, capacidad excedida, ruta incompleta, ventana incumplida y transición ilegal.
-
 class FlotaError(Exception):
     pass
 

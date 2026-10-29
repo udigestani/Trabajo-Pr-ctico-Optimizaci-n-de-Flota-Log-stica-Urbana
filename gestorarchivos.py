@@ -68,6 +68,3 @@ class GestorArchivos:
                 datos = list(map(lambda x: x.serializar(), datos))
             GestorArchivos.escribir(linea1.split(","), datos, carpeta / ruta)
         return None
-
-# contexto = GestorArchivos.leer_todos()
-# GestorArchivos.guardar_todos(contexto)
