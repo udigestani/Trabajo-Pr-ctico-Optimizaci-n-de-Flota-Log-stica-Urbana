@@ -3,13 +3,14 @@ from excepciones import ExcesoPesoError, DatoInvalidoError
 
 class Transporte:
     curr_id = 0
+    UNIDAD_IMPACTO = "kg CO₂"
     def __init__(self, peso_max, volumen, velocidad, costo_km, costo_parada, factor_ambiental):
         self.peso_max = Validaciones.validar_numero(peso_max, nombre = "peso_max")
         self.costo_km = Validaciones.validar_numero(costo_km, nombre = "costo_km")
         self.factor_ambiental = Validaciones.validar_numero(factor_ambiental, nombre = "factor_ambiental")
         self.volumen = Validaciones.validar_numero(volumen, nombre = "volumen")
         self.velocidad = Validaciones.validar_numero(velocidad, nombre = "velocidad")
-        self.costo_parada = Validaciones.validar_numero(costo_parada, nombre = "costo_parada")
+        self.costo_parada = Validaciones.validar_numero(costo_parada, cero = True, nombre = "costo_parada")
 
         Transporte.curr_id += 1      
         self.id = Transporte.curr_id

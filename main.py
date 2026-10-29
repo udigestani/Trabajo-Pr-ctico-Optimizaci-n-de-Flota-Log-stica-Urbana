@@ -166,9 +166,9 @@ def ver_impacto_ambiental(viajes):
     print("\nIMPACTO AMBIENTAL DE CADA VIAJE: ")
     total = 0
     for viaje in viajes:
-        print(f"Viaje {viaje.getter_id()}: {viaje.impacto_ambiental():.2f}kg CO₂")
+        print(f"Viaje {viaje.getter_id()}: {viaje.impacto_ambiental():.2f}{Transporte.UNIDAD_IMPACTO}")
         total += viaje.impacto_ambiental()
-    print(f"\nEl impacto ambiental total de los viajes es de {total:.2f}kg CO₂")
+    print(f"\nEl impacto ambiental total de los viajes es de {total:.2f}{Transporte.UNIDAD_IMPACTO}")
 
 def deshacer_ultima_solicitud(viajes):
     viaje = elegir_viaje(viajes, estados = {"PLANIFICADO"})
