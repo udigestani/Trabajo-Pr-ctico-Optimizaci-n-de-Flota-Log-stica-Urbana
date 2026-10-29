@@ -33,3 +33,7 @@ Palermo,Almagro,2.5
 Almagro,Palermo,2.7
 Deposito,Parque Patricios,8.2
 Parque Patricios,Deposito,8.2
+Olivos,Deposito,9.0
+Deposito,Olivos,10.0
+Olivos,Palermo,5.0
+Palermo,Olivos,5.0

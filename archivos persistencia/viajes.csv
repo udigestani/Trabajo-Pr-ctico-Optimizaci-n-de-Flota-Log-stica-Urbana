@@ -9,3 +9,4 @@ id,id_transporte,deposito,horario,estado,solicitudes,incidentes,paradas,paradas_
 8,8,Deposito,2026-10-24 08:00:00,PLANIFICADO,"17,18,19,23",,,,"17,18,19,23"
 9,9,Deposito,2026-10-25 08:00:00,FINALIZADO,16,,,11,16
 10,10,Deposito,2026-10-27 09:00:00,PLANIFICADO,,,,,
+11,10,Deposito,2026-10-30 07:00:00,FINALIZADO,"25,26",5,,"12,13","25,26"

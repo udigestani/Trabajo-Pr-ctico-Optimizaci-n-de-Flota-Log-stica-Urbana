@@ -61,6 +61,8 @@ class Administrador(Persona):
     def crear_viaje(self, transporte, deposito, horario, matriz):
         viaje = Viaje(transporte, deposito, horario, matriz)
         return viaje
+    def __str__(self):
+        return f"Administrador de nombre {self.nombre} y DNI: {self.dni}"
 
 class Solicitante(Persona):
     def __init__(self, nombre, dni, telefono):
@@ -70,3 +72,5 @@ class Solicitante(Persona):
     def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, *articulos):
         Validaciones.validar_instancia(viaje, clase = Viaje, nombre = "viaje")
         return viaje.crear_solicitud(destino, ventana_inicio, ventana_fin, *articulos)
+    def __str__(self):
+        return f"Solicitante de nombre {self.nombre} y DNI: {self.dni}"

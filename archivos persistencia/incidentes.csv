@@ -3,3 +3,4 @@ id,tipo,fecha,descripcion,clase_afectado,id_afectado,detalles,Incidente
 2,RETRASO,2026-10-20 11:00:00,Trafico,Solicitud,8,
 3,AUSENTE,2027-03-01 12:00:00,nadie,Solicitud,4,
 4,AUSENTE,2026-10-22 10:00:00,Cliente ausente,Solicitud,10,
+5,DAÑO,2026-10-30 11:00:00,Art roto,Solicitud,26,

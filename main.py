@@ -140,7 +140,7 @@ def buscar_persona():
         print(f"No hay ninguna persona registrada con el DNI {dni}.")
         print(f"Saltos entre nodos hasta llegar a un lugar vacío: {saltos}")
         return None
-    print(f"\nPERSONA ENCONTRADA ({persona.__class__.__name__}): {persona}")
+    print(f"\nPERSONA ENCONTRADA: {persona}")
     print(f"Teléfono: {persona.getter_telefono()}")
     print(f"Saltos entre nodos desde la raíz: {saltos}")
 
