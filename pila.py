@@ -9,23 +9,23 @@ class Pila:
     def ver_tope(self):
         if self.esVacia():
             raise ValueError("No se puede ver el tope porque la pila está vacía")
-        return self.tope.dato
+        return self.tope.getter_dato()
     def apilar(self, dato):
         nodo = Nodo(dato)
-        nodo.siguiente = self.tope
+        nodo.setter_siguiente(self.tope)
         self.tope = nodo
         self.longitud += 1
     def desapilar(self):
         if self.esVacia():
             raise ValueError("No se pueden desapilar datos porque la pila está vacía")
-        dato = self.tope.dato
-        self.tope = self.tope.siguiente
+        dato = self.tope.getter_dato()
+        self.tope = self.tope.getter_siguiente()
         self.longitud -= 1
         return dato
     def __iter__(self):
         actual = self.tope
         while actual is not None:
-            yield actual.dato
-            actual = actual.siguiente
+            yield actual.getter_dato()
+            actual = actual.getter_siguiente()
     def get_longitud(self):
         return self.longitud
