@@ -45,6 +45,9 @@ class Transporte:
     def getter_costo_parada(self):
         return self.costo_parada
 
+    def getter_factor_ambiental(self):
+        return self.factor_ambiental
+
     def getter_tipo(self):
         return self.__class__.__name__
 

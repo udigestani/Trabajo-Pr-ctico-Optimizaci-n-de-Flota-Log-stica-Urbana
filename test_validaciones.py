@@ -5,6 +5,7 @@ from validaciones import Validaciones
 from excepciones import DatoInvalidoError, DNIInvalidoError, VentanaInvalidaError, FlotaError
 from articulo import Articulo
 from cola import Cola
+from arbol import Arbol
 from transporte import Transporte, Camion
 
 INICIO = datetime(2025, 1, 1, 9, 0)
@@ -19,6 +20,14 @@ def mock_fecha(mocker):
 @pytest.fixture
 def mock_digitos(mocker):
     return mocker.patch.object(Validaciones, "validar_digitos")
+
+# Árbol de DNIs registrados (cada nodo guarda el DNI y la persona; acá la persona es el propio DNI)
+@pytest.fixture
+def dnis_registrados():
+    arbol = Arbol()
+    for dni in (11111111, 22222222):
+        arbol.insertar(dni, dni)
+    return arbol
 
 @pytest.fixture
 def articulo_falso(mocker):
@@ -275,32 +284,39 @@ def test_digitos_tipoInvalido():
 
 # ---------- validar_dni ----------
 # Funcionamiento normal
-def test_dni_ok(mock_digitos):
+def test_dni_ok(mock_digitos, dnis_registrados):
     # sin dnis registrados
     assert Validaciones.validar_dni(12345678) == 12345678
     mock_digitos.assert_called_once_with(12345678, (7, 8), "DNI")
     assert Validaciones.validar_dni(12345678, registrados = None) == 12345678
     # con dnis registrados
-    assert Validaciones.validar_dni(44445555, registrados = {11111111, 22222222}) == 44445555
-    assert Validaciones.validar_dni(67676767, registrados = [11111111]) == 67676767
+    assert Validaciones.validar_dni(44445555, registrados = dnis_registrados) == 44445555
+    assert Validaciones.validar_dni(67676767, registrados = dnis_registrados) == 67676767
     mock_digitos.assert_any_call(44445555, (7, 8), "DNI")
     mock_digitos.assert_any_call(67676767, (7, 8), "DNI")
+    # no modifica el árbol
+    assert dnis_registrados.inorden(dnis_registrados.getter_raiz()) == [11111111, 22222222]
 # Errores
-def test_dni_duplicado(mock_digitos):
+def test_dni_duplicado(mock_digitos, dnis_registrados):
     # Captura dni invalido
-    with pytest.raises(DNIInvalidoError, match = "El DNI 12345678 ya está registrado"):
-        Validaciones.validar_dni(12345678, registrados = {12345678})
+    with pytest.raises(DNIInvalidoError, match = "El DNI 11111111 ya está registrado"):
+        Validaciones.validar_dni(11111111, registrados = dnis_registrados)
     # Captura dato invalido (jerarquizacion)
     with pytest.raises(DatoInvalidoError):
-        Validaciones.validar_dni(12345678, registrados = (12345678,))
+        Validaciones.validar_dni(22222222, registrados = dnis_registrados)
 def test_dni_digitosInvalidos_sePropaga(mocker, mock_digitos):
-    dnis_registrados = mocker.MagicMock(spec = set)
+    arbol = mocker.Mock(spec = Arbol)
+    arbol.buscar.return_value = None
     mock_digitos.side_effect = [DatoInvalidoError("El DNI 999 debe tener 7 u 8 dígitos"), 999]
     with pytest.raises(DatoInvalidoError, match = "El DNI 999 debe tener 7 u 8 dígitos"):
-        Validaciones.validar_dni(999, registrados = dnis_registrados)
-    dnis_registrados.__contains__.assert_not_called()
-    Validaciones.validar_dni(45323232, registrados = dnis_registrados)
-    dnis_registrados.__contains__.assert_called_once_with(45323232)
+        Validaciones.validar_dni(999, registrados = arbol)
+    arbol.buscar.assert_not_called()
+    Validaciones.validar_dni(45323232, registrados = arbol)
+    arbol.buscar.assert_called_once_with(arbol.getter_raiz.return_value, 45323232)
+# Sin registrados: no comparte estado entre llamadas
+def test_dni_sinRegistrados_noComparteEstado(mock_digitos):
+    assert Validaciones.validar_dni(12345678) == 12345678
+    assert Validaciones.validar_dni(12345678) == 12345678
 
 
 # ---------- validar_en ----------
@@ -324,6 +340,13 @@ def test_en_noPertenece():
     # varios valores
     with pytest.raises(DatoInvalidoError, match = "El valor AUS debe ser uno de: DAÑO, AUSENTE, RETRASO"):
         Validaciones.validar_en("DAÑO", "AUS", opciones = OPCIONES)
+def test_en_noPertenece_opcionesTexto():
+    with pytest.raises(DatoInvalidoError, match = "El estado CANCELADA debe ser uno de: FALLIDA, ENTREGADA"):
+        Validaciones.validar_en("CANCELADA", opciones = "FALLIDA, ENTREGADA", nombre = "estado")
+    # Las opciones separadas por coma sin espacios también se ignoran
+    assert Validaciones.validar_en("b", opciones = "a,b") == "b"
+    with pytest.raises(DatoInvalidoError, match = "El valor c debe ser uno de: a, b"):
+        Validaciones.validar_en("a", "c", opciones = "a,  b")
 def test_en_tipoInvalido():
     with pytest.raises(TypeError, match = "El tipo de incidente None debe ser una cadena str"):
         Validaciones.validar_en(None, opciones = OPCIONES, nombre = "tipo de incidente")
@@ -452,7 +475,7 @@ def test_coleccion_elementoDeOtraClase(articulo_falso):
 
 # ---------- General ----------
 # Errores de valor
-def test_validaciones_erroresDeValorSonFlotaError():
+def test_validaciones_erroresDeValorSonFlotaError(dnis_registrados):
     with pytest.raises(FlotaError):
         Validaciones.validar_str("")
     with pytest.raises(FlotaError):
@@ -462,7 +485,7 @@ def test_validaciones_erroresDeValorSonFlotaError():
     with pytest.raises(FlotaError):
         Validaciones.validar_digitos(1, (8,))
     with pytest.raises(FlotaError):
-        Validaciones.validar_dni(12345678, registrados = {12345678})
+        Validaciones.validar_dni(11111111, registrados = dnis_registrados)
     with pytest.raises(FlotaError):
         Validaciones.validar_en("x", opciones = ("a",))
     with pytest.raises(FlotaError):

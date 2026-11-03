@@ -26,19 +26,23 @@ def articulo_falso_igual(mocker):
 
 # Funcionamiento normal
 def test_articulo_ok(articulo):
-    assert articulo.descripcion == "Caja"
-    assert articulo.peso == 10
-    assert articulo.volumen == 0.5
+    assert articulo.getter_descripcion() == "Caja"
+    assert articulo.getter_peso() == 10
+    assert articulo.getter_volumen() == 0.5
     # id
-    assert articulo.id == 1
+    assert articulo.getter_id() == 1
     articulo2 = Articulo("Art 2", 2, 1)
-    assert articulo2.id == 2
+    assert articulo2.getter_id() == 2
 # Getters
 def test_articulo_getters(articulo):
     assert articulo.getter_id() == 1
     assert articulo.getter_peso() == 10
     assert articulo.getter_volumen() == 0.5
     assert articulo.getter_descripcion() == "Caja"
+# Setter id
+def test_articulo_setterId(articulo):
+    articulo.setter_id(7)
+    assert articulo.getter_id() == 7
 # Metodos mágicos
 def test_articulo_metodosMagicos(articulo, mock_validaciones, articulo_falso_igual):
     assert str(articulo) == "Artículo 1: Caja (10kg, 0.5m³)"
@@ -104,3 +108,44 @@ def test_articulo_volumenNoNumero_sePropaga(mock_validaciones):
     with pytest.raises(TypeError, match = "El volumen debe ser número"):
         Articulo("Caja", 10, "Uno")
     assert Articulo.curr_id == 0
+
+
+# ---------- serializar ----------
+def test_articulo_serializar(articulo):
+    assert articulo.serializar() == [1, "Caja", 10, 0.5]
+
+# ---------- deserializar ----------
+# Funcionamiento normal
+def test_articulo_deserializar_ok(mock_validaciones):
+    archivo = [["id", "descripcion", "peso", "volumen", "Articulo"], ["3", "Caja", "10", "0.5"], [], ["5", "Libro", "2.5", "1"]]
+    articulos = Articulo.deserializar(archivo)
+    assert len(articulos) == 2
+    assert articulos[0].getter_id() == 3
+    assert articulos[0].getter_descripcion() == "Caja"
+    assert articulos[0].getter_peso() == 10.0
+    assert articulos[0].getter_volumen() == 0.5
+    assert articulos[1].getter_id() == 5
+    assert articulos[1].getter_descripcion() == "Libro"
+    assert articulos[1].getter_peso() == 2.5
+    assert articulos[1].getter_volumen() == 1.0
+    # El próximo id continúa desde el mayor
+    assert Articulo.curr_id == 5
+    assert Articulo("Taza", 1, 1).getter_id() == 6
+# Sin filas
+def test_articulo_deserializar_soloEncabezado(mock_validaciones):
+    assert Articulo.deserializar([["id", "descripcion", "peso", "volumen", "Articulo"]]) == []
+    assert Articulo.curr_id == 0
+# Si ya se habían creado más articulos, el contador no retrocede
+def test_articulo_deserializar_noRetrocedeElContador(mock_validaciones):
+    Articulo.curr_id = 10
+    Articulo.deserializar([["id", "descripcion", "peso", "volumen", "Articulo"], ["3", "Caja", "10", "0.5"]])
+    assert Articulo.curr_id >= 10
+    assert Articulo("Taza", 1, 1).getter_id() > 10
+# Lo serializado se puede volver a cargar (el csv guarda todo como texto)
+def test_articulo_serializar_deserializar(articulo, mock_validaciones):
+    fila = list(map(str, articulo.serializar()))
+    copia = Articulo.deserializar([["id", "descripcion", "peso", "volumen", "Articulo"], fila])[0]
+    assert copia.getter_id() == articulo.getter_id()
+    assert copia.getter_descripcion() == articulo.getter_descripcion()
+    assert copia.getter_peso() == articulo.getter_peso()
+    assert copia.getter_volumen() == articulo.getter_volumen()

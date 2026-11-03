@@ -5,6 +5,10 @@ class Cola:
         self.inicio = None
         self.final = None
         self.longitud = 0
+    def getter_inicio(self):
+        return self.inicio
+    def getter_final(self):
+        return self.final
     def esVacia(self):
         return self.inicio == None
     def frente(self):

@@ -32,23 +32,23 @@ def incidente(mock_validaciones, afectado):
 
 # Funcionamiento normal
 def test_incidente_ok(incidente, mock_validaciones, afectado):
-    assert incidente.tipo == "DAÑO"
-    assert incidente.fecha == FECHA
-    assert incidente.descripcion == "Caja rota"
-    assert incidente.afectado is afectado
-    assert incidente.detalles == {}
-    assert incidente.id == 1
+    assert incidente.getter_tipo() == "DAÑO"
+    assert incidente.getter_fecha() == FECHA
+    assert incidente.getter_descripcion() == "Caja rota"
+    assert incidente.getter_afectado() is afectado
+    assert incidente.getter_detalles() == {}
+    assert incidente.getter_id() == 1
     # id
     inc2 = Incidente("DAÑO", FECHA, "Uno", afectado)
-    assert inc2.id == 2
+    assert inc2.getter_id() == 2
 
 def test_incidente_detalles(mock_validaciones, afectado):
     incidente = Incidente("DAÑO", FECHA, "Caja rota", afectado, camion="Camion 1")
-    assert incidente.detalles == {"camion": "Camion 1"}
+    assert incidente.getter_detalles() == {"camion": "Camion 1"}
 
 def test_incidente_descripcionStrip(mock_validaciones, afectado):
     incidente = Incidente("AUSENTE", FECHA, "   Nadie en casa   ", afectado)
-    assert incidente.descripcion == "Nadie en casa"
+    assert incidente.getter_descripcion() == "Nadie en casa"
 # Getters
 def test_incidente_getters(incidente, afectado):
     assert incidente.getter_tipo() == "DAÑO"
@@ -57,6 +57,11 @@ def test_incidente_getters(incidente, afectado):
     assert incidente.getter_fecha() == FECHA
     assert incidente.getter_descripcion() == "Caja rota"
     assert incidente.getter_detalles() == {}
+
+# Setter id
+def test_incidente_setterId(incidente):
+    incidente.setter_id(7)
+    assert incidente.getter_id() == 7
 
 def test_incidente_getterDetalles_copia(mock_validaciones, afectado):
     incidente = Incidente("DAÑO", FECHA, "Caja rota", afectado, camion="ABC123")
@@ -141,3 +146,70 @@ def test_incidente_afectadoEsSolicitud(mocker):
 def test_incidente_noModificaAfectado(mock_validaciones, afectado):
     Incidente("DAÑO", FECHA, "Caja rota", afectado)
     assert afectado.method_calls == []
+
+
+# ---------- serializar ----------
+def test_incidente_serializar_afectadoSolicitud(incidente, afectado):
+    afectado.getter_id.return_value = 7
+    assert incidente.serializar() == [1, "DAÑO", FECHA, "Caja rota", "Solicitud", 7, ""]
+def test_incidente_serializar_afectadoTransporte(mock_validaciones, mocker):
+    transporte = mocker.Mock(spec = Transporte)
+    transporte.getter_id.return_value = 3
+    incidente = Incidente("RETRASO", FECHA, "Pinchazo", transporte)
+    assert incidente.serializar() == [1, "RETRASO", FECHA, "Pinchazo", "Transporte", 3, ""]
+def test_incidente_serializar_detalles(mock_validaciones, afectado):
+    afectado.getter_id.return_value = 7
+    incidente = Incidente("DAÑO", FECHA, "Caja rota", afectado, rueda = "delantera", costo = 500)
+    assert incidente.serializar() == [1, "DAÑO", FECHA, "Caja rota", "Solicitud", 7, "rueda=delantera,costo=500"]
+
+# ---------- deserializar ----------
+ENCABEZADO = ["id", "tipo", "fecha", "descripcion", "clase_afectado", "id_afectado", "detalles", "Incidente"]
+@pytest.fixture
+def transporte(mocker):
+    mock = mocker.Mock(spec = Transporte)
+    mock.getter_id.return_value = 3
+    return mock
+@pytest.fixture
+def contexto(afectado, transporte):
+    afectado.getter_id.return_value = 7
+    return {Solicitud: [afectado], Transporte: [transporte]}
+# Funcionamiento normal
+def test_incidente_deserializar_ok(mock_validaciones, contexto, afectado, transporte):
+    archivo = [ENCABEZADO,
+               ["2", "DAÑO", "2026-10-11 14:30:00", "Caja rota", "Solicitud", "7", ""],
+               [],
+               ["5", "RETRASO", "2026-10-11 15:00:00", "Pinchazo", "Furgoneta", "3", "rueda=delantera,costo=500"]]
+    incidentes = Incidente.deserializar(archivo, contexto)
+    assert len(incidentes) == 2
+    assert incidentes[0].getter_id() == 2
+    assert incidentes[0].getter_tipo() == "DAÑO"
+    assert incidentes[0].getter_fecha() == FECHA
+    assert incidentes[0].getter_descripcion() == "Caja rota"
+    assert incidentes[0].getter_afectado() is afectado
+    assert incidentes[0].getter_detalles() == {}
+    assert incidentes[1].getter_id() == 5
+    assert incidentes[1].getter_tipo() == "RETRASO"
+    # Cualquier clase que no sea Solicitud es un transporte
+    assert incidentes[1].getter_afectado() is transporte
+    assert incidentes[1].getter_detalles() == {"rueda": "delantera", "costo": "500"}
+    # El próximo id continúa desde el mayor
+    assert Incidente.curr_id == 5
+# Sin filas
+def test_incidente_deserializar_soloEncabezado(mock_validaciones, contexto):
+    assert Incidente.deserializar([ENCABEZADO], contexto) == []
+    assert Incidente.curr_id == 0
+# Afectado inexistente
+def test_incidente_deserializar_afectadoInexistente(mock_validaciones, contexto):
+    with pytest.raises(KeyError):
+        Incidente.deserializar([ENCABEZADO, ["1", "DAÑO", "2026-10-11 14:30:00", "Caja rota", "Solicitud", "999", ""]], contexto)
+# Lo serializado se puede volver a cargar
+def test_incidente_serializar_deserializar(mock_validaciones, contexto, afectado):
+    original = Incidente("DAÑO", FECHA, "Caja rota", afectado, rueda = "delantera")
+    fila = list(map(str, original.serializar()))
+    copia = Incidente.deserializar([ENCABEZADO, fila], contexto)[0]
+    assert copia.getter_id() == original.getter_id()
+    assert copia.getter_tipo() == original.getter_tipo()
+    assert copia.getter_fecha() == original.getter_fecha()
+    assert copia.getter_descripcion() == original.getter_descripcion()
+    assert copia.getter_afectado() is afectado
+    assert copia.getter_detalles() == original.getter_detalles()

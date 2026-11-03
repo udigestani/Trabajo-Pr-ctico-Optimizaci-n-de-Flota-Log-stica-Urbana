@@ -21,7 +21,7 @@ def test_pila_ok():
     # Un solo nodo
     assert pila.get_longitud() == 1    # Bajó con desapilar
     assert pila.ver_tope() == 1
-    assert pila.tope.siguiente is None  # Con un solo nodo, no apunta a nada
+    assert pila.getter_tope().getter_siguiente() is None  # Con un solo nodo, no apunta a nada
     assert pila.desapilar() == 1
     assert pila.esVacia()
     assert pila.get_longitud() == 0
@@ -36,11 +36,11 @@ def test_pila_ok():
 def test_pila_enlaces():
     pila = Pila()
     pila.apilar(1)
-    nodo_anterior = pila.tope
+    nodo_anterior = pila.getter_tope()
     pila.apilar(2)
-    assert pila.tope.siguiente is nodo_anterior
+    assert pila.getter_tope().getter_siguiente() is nodo_anterior
     pila.desapilar()
-    assert pila.tope is nodo_anterior
+    assert pila.getter_tope() is nodo_anterior
 
 # Iterar no modifica la pila
 def test_pila_iterar():

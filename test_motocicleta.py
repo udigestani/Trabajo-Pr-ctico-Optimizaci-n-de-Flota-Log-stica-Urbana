@@ -31,16 +31,16 @@ def test_motocicleta_atributosClase():
 
 # Funcionamiento normal
 def test_motocicleta_ok(moto):
-    assert moto.peso_max == 40
-    assert moto.volumen == 1
-    assert moto.velocidad == 45
-    assert moto.costo_km == 1
-    assert moto.costo_parada == 3
-    assert moto.factor_ambiental == 0.27
+    assert moto.getter_peso_max() == 40
+    assert moto.getter_volumen() == 1
+    assert moto.getter_velocidad() == 45
+    assert moto.getter_costo_km() == 1
+    assert moto.getter_costo_parada() == 3
+    assert moto.getter_factor_ambiental() == 0.27
     # id
-    assert moto.id == 1
+    assert moto.getter_id() == 1
     moto2 = Motocicleta()
-    assert moto2.id == 2
+    assert moto2.getter_id() == 2
 # Getters
 def test_motocicleta_getters(moto):
     assert moto.getter_peso_max() == 40
@@ -49,8 +49,8 @@ def test_motocicleta_getters(moto):
     assert moto.getter_tipo() == "Motocicleta"
 # Métodos mágicos
 def test_motocicleta_metodosMagicos(moto):
-    assert str(moto) == f"Motocicleta {moto.id} (Max: 40kg, 1m³)"
-    assert repr(moto) == f"<Motocicleta {moto.id}>"
+    assert str(moto) == f"Motocicleta {moto.getter_id()} (Max: 40kg, 1m³)"
+    assert repr(moto) == f"<Motocicleta {moto.getter_id()}>"
 # Herencia
 def test_motocicleta_herencia(moto):
     assert isinstance(moto, Transporte)
@@ -109,3 +109,7 @@ def test_motocicleta_pesoInvalidoMock(mocker):
         motocicleta.calcular_impacto_ambiental(10, 20)
     mock.validar_numero.assert_any_call(10, cero = True, nombre = "distancia")
     mock.validar_numero.assert_called_with(20, cero = True, nombre = "peso")
+
+# Serializar
+def test_motocicleta_serializar(moto):
+    assert moto.serializar() == ["Motocicleta", 1, 40, 1, 45, 1, 3, 0.27]

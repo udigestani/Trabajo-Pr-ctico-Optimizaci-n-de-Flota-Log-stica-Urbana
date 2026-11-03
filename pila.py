@@ -4,6 +4,8 @@ class Pila:
     def __init__(self):
         self.tope = None
         self.longitud = 0
+    def getter_tope(self):
+        return self.tope
     def esVacia(self):
         return self.tope is None
     def ver_tope(self):

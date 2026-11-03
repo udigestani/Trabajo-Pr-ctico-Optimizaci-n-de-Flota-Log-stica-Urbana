@@ -38,7 +38,8 @@ def test_solicitante_ok(solicitante):
     assert isinstance(solicitante, Persona)
     assert not isinstance(solicitante, Administrador)
     assert issubclass(Solicitante, Persona)
-    assert Persona.getter_dnis_registrados() == {87654321}
+    arbol = Persona.getter_dnis_registrados()
+    assert arbol.buscar(arbol.getter_raiz(), 87654321) is solicitante
 
 # DNIInvalidoError si el DNI ya está registrado
 def test_solicitante_dniRepetido():
@@ -80,3 +81,10 @@ def test_crearSolicitud_viajeEnCurso(solicitante, mock_viaje, mock_articulo, ini
     mock_viaje.crear_solicitud.side_effect = EstadoInvalidoError("crear_solicitud", "EN_CURSO")
     with pytest.raises(EstadoInvalidoError):
         solicitante.crear_solicitud(mock_viaje, "Destino", inicio, fin, mock_articulo)
+
+
+# ---------- serializar ----------
+def test_solicitante_serializar(solicitante):
+    assert solicitante.serializar() == ["Solicitante", "Manuel", 87654321, 1199998888]
+def test_solicitante_str(solicitante):
+    assert str(solicitante) == "Solicitante de nombre Manuel y DNI: 87654321"

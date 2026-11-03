@@ -16,14 +16,14 @@ def test_cola_ok():
     assert cola.get_longitud() == 3  # Subió con encolar
     assert cola.frente() == 1      # Primera entra primera sale FIFO / PEPS
     assert cola.frente() == 1    # Frente no modifica la cola
-    assert cola.final.dato == 3
+    assert cola.getter_final().getter_dato() == 3
     assert cola.desencolar() == 1
     assert cola.desencolar() == 2
     # Un solo nodo
     assert cola.get_longitud() == 1    # Bajo con desencolar
     assert cola.frente() == 3
-    assert cola.inicio is cola.final      # Inicio y final son el mismo en colas de 1 elem
-    assert cola.inicio.siguiente is None
+    assert cola.getter_inicio() is cola.getter_final()      # Inicio y final son el mismo en colas de 1 elem
+    assert cola.getter_inicio().getter_siguiente() is None
     assert cola.desencolar() == 3
     assert cola.esVacia()
     # No se borra la cola si esVacia

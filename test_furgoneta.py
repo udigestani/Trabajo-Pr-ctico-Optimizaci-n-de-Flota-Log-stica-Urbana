@@ -31,16 +31,16 @@ def test_furgoneta_atributosClase():
 
 # Funcionamiento normal
 def test_furgoneta_ok(furgoneta):
-    assert furgoneta.peso_max == 500
-    assert furgoneta.volumen == 8
-    assert furgoneta.velocidad == 30
-    assert furgoneta.costo_km == 2
-    assert furgoneta.costo_parada == 5
-    assert furgoneta.factor_ambiental == 0.27
+    assert furgoneta.getter_peso_max() == 500
+    assert furgoneta.getter_volumen() == 8
+    assert furgoneta.getter_velocidad() == 30
+    assert furgoneta.getter_costo_km() == 2
+    assert furgoneta.getter_costo_parada() == 5
+    assert furgoneta.getter_factor_ambiental() == 0.27
     # id
-    assert furgoneta.id == 1
+    assert furgoneta.getter_id() == 1
     furgoneta2 = Furgoneta()
-    assert furgoneta2.id == 2
+    assert furgoneta2.getter_id() == 2
 # Getters
 def test_furgoneta_getters(furgoneta):
     assert furgoneta.getter_peso_max() == 500
@@ -49,8 +49,8 @@ def test_furgoneta_getters(furgoneta):
     assert furgoneta.getter_tipo() == "Furgoneta"
 # Métodos mágicos
 def test_furgoneta_metodosMagicos(furgoneta):
-    assert str(furgoneta) == f"Furgoneta {furgoneta.id} (Max: 500kg, 8m³)"
-    assert repr(furgoneta) == f"<Furgoneta {furgoneta.id}>"
+    assert str(furgoneta) == f"Furgoneta {furgoneta.getter_id()} (Max: 500kg, 8m³)"
+    assert repr(furgoneta) == f"<Furgoneta {furgoneta.getter_id()}>"
 # Herencia
 def test_furgoneta_herencia(furgoneta):
     assert isinstance(furgoneta, Transporte)
@@ -109,3 +109,7 @@ def test_furgoneta_pesoInvalidoMock(mocker):
         furgoneta.calcular_impacto_ambiental(10, 100)
     mock.validar_numero.assert_any_call(10, cero = True, nombre = "distancia")
     mock.validar_numero.assert_called_with(100, cero = True, nombre = "peso")
+
+# Serializar
+def test_furgoneta_serializar(furgoneta):
+    assert furgoneta.serializar() == ["Furgoneta", 1, 500, 8, 30, 2, 5, 0.27]

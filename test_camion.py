@@ -29,18 +29,22 @@ def test_camion_atributosClase():
     assert Camion.COSTO_PARADA == 10
     assert Camion.FACTOR_AMBIENTAL == 1
 
+# La unidad del impacto ambiental se hereda de Transporte
+def test_camion_unidadImpacto():
+    assert Camion.UNIDAD_IMPACTO == "kg CO₂"
+
 # Funcionamiento normal
 def test_camion_ok(camion):
-    assert camion.peso_max == 1500
-    assert camion.volumen == 20
-    assert camion.velocidad == 25
-    assert camion.costo_km == 3.5
-    assert camion.costo_parada == 10
-    assert camion.factor_ambiental == 1
+    assert camion.getter_peso_max() == 1500
+    assert camion.getter_volumen() == 20
+    assert camion.getter_velocidad() == 25
+    assert camion.getter_costo_km() == 3.5
+    assert camion.getter_costo_parada() == 10
+    assert camion.getter_factor_ambiental() == 1
     # id
-    assert camion.id == 1
+    assert camion.getter_id() == 1
     camion2 = Camion()
-    assert camion2.id == 2
+    assert camion2.getter_id() == 2
 # Getters
 def test_camion_getters(camion):
     assert camion.getter_peso_max() == 1500
@@ -49,8 +53,8 @@ def test_camion_getters(camion):
     assert camion.getter_tipo() == "Camion"
 # Métodos mágicos
 def test_camion_metodosMagicos(camion):
-    assert str(camion) == f"Camion {camion.id} (Max: 1500kg, 20m³)"
-    assert repr(camion) == f"<Camion {camion.id}>"
+    assert str(camion) == f"Camion {camion.getter_id()} (Max: 1500kg, 20m³)"
+    assert repr(camion) == f"<Camion {camion.getter_id()}>"
 # Herencia
 def test_camion_herencia(camion):
     assert isinstance(camion, Transporte)
@@ -110,3 +114,7 @@ def test_camion_pesoInvalidoMock(mocker):
         camion.calcular_impacto_ambiental(10, 1000)
     mock_validaciones.validar_numero.assert_any_call(10, cero = True, nombre = "distancia")
     mock_validaciones.validar_numero.assert_called_with(1000, cero = True, nombre = "peso")
+
+# Serializar
+def test_camion_serializar(camion):
+    assert camion.serializar() == ["Camion", 1, 1500, 20, 25, 3.5, 10, 1]

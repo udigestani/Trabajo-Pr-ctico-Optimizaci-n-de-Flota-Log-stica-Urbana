@@ -56,18 +56,18 @@ def solicitud_falsa_igual(mocker):
 
 # Funcionamiento normal
 def test_solicitud_ok(solicitud, articulo1, articulo2, mock_validaciones):
-    assert solicitud.destino == "Destino 1"
-    assert solicitud.ventana_inicio == INICIO
-    assert solicitud.ventana_fin == FIN
-    assert solicitud.articulos == (articulo1,)
-    assert solicitud.viaje is None
-    assert solicitud.comprobante is None
+    assert solicitud.getter_destino() == "Destino 1"
+    assert solicitud.getter_ventana_inicio() == INICIO
+    assert solicitud.getter_ventana_fin() == FIN
+    assert solicitud.getter_articulos() == (articulo1,)
+    assert solicitud.getter_viaje() is None
+    assert solicitud.getter_comprobante() is None
     # id
-    assert solicitud.id == 1
+    assert solicitud.getter_id() == 1
     solicitud2 = Solicitud("Destino 2", INICIO, FIN, articulo1, articulo2)
-    assert solicitud2.id == 2
+    assert solicitud2.getter_id() == 2
     # Varios articulos
-    assert solicitud2.articulos == (articulo1, articulo2)
+    assert solicitud2.getter_articulos() == (articulo1, articulo2)
 # Getters
 def test_solicitud_getters(solicitud, mock_validaciones, articulo1, articulo2):
     assert solicitud.getter_id() == 1
@@ -88,16 +88,16 @@ def test_solicitud_getters(solicitud, mock_validaciones, articulo1, articulo2):
 def test_solicitud_setters(solicitud, articulo1, articulo2):
     with pytest.raises(AttributeError):
         solicitud.setter_articulos((articulo1, articulo2))
-    assert solicitud.articulos == (articulo1, )
+    assert solicitud.getter_articulos() == (articulo1, )
     with pytest.raises(AttributeError):
         solicitud.setter_destino("Destino 100")
-    assert solicitud.destino == "Destino 1"
+    assert solicitud.getter_destino() == "Destino 1"
     with pytest.raises(AttributeError):
         solicitud.setter_ventana_inicio(FIN)
-    assert solicitud.ventana_inicio == INICIO
+    assert solicitud.getter_ventana_inicio() == INICIO
     with pytest.raises(AttributeError):
         solicitud.setter_ventana_fin(INICIO)
-    assert solicitud.ventana_fin == FIN
+    assert solicitud.getter_ventana_fin() == FIN
     with pytest.raises(AttributeError):
         solicitud.setter_peso(100)
     assert solicitud.getter_peso() == 5
@@ -170,6 +170,26 @@ def test_solicitud_estaAsignada(solicitud, viaje):
     assert solicitud.esta_asignada() is True
     solicitud.setter_viaje(None)
     assert solicitud.esta_asignada() is False
+def test_solicitud_estaPendiente(solicitud, viaje, comprobante):
+    assert solicitud.esta_pendiente() is True
+    # Asignada a un viaje (planificado o en curso)
+    solicitud.setter_viaje(viaje)
+    viaje.getter_estado.return_value = "PLANIFICADO"
+    assert solicitud.esta_pendiente() is False
+    viaje.getter_estado.return_value = "EN_CURSO"
+    assert solicitud.esta_pendiente() is False
+    # Viaje finalizado sin entrega: vuelve a estar pendiente
+    viaje.getter_estado.return_value = "FINALIZADO"
+    assert solicitud.esta_pendiente() is True
+    # Entregada
+    solicitud.setter_comprobante(comprobante)
+    assert solicitud.esta_pendiente() is False
+    solicitud.setter_viaje(None)
+    assert solicitud.esta_pendiente() is False
+# Setter id
+def test_solicitud_setterId(solicitud):
+    solicitud.setter_id(7)
+    assert solicitud.getter_id() == 7
 # Validaciones
 def test_solicitud_validaciones(mock_validaciones, articulo1, articulo2):
     Solicitud("Destino 1", INICIO, FIN, articulo1, articulo2)
@@ -207,3 +227,72 @@ def test_solicitud_ventanaNoDatetime_sePropaga(mock_validaciones, articulo1):
     with pytest.raises(TypeError, match = "La ventana debe ser datetime"):
         Solicitud("Destino 1", "09:00", "12:00", articulo1)
     assert Solicitud.curr_id == 0
+
+
+# ---------- serializar ----------
+def test_solicitud_serializar(solicitud, articulo1):
+    articulo1.getter_id.return_value = 1
+    assert solicitud.serializar() == [1, "Destino 1", INICIO, FIN, "1", "", ""]
+def test_solicitud_serializar_variosArticulos(mock_validaciones, articulo1, articulo2):
+    articulo1.getter_id.return_value = 1
+    articulo2.getter_id.return_value = 2
+    solicitud = Solicitud("Destino 1", INICIO, FIN, articulo1, articulo2)
+    assert solicitud.serializar()[4] == "1,2"
+def test_solicitud_serializar_conViajeYComprobante(solicitud, articulo1, viaje, comprobante):
+    articulo1.getter_id.return_value = 1
+    viaje.getter_id.return_value = 4
+    comprobante.getter_id.return_value = 9
+    solicitud.setter_viaje(viaje)
+    solicitud.setter_comprobante(comprobante)
+    assert solicitud.serializar() == [1, "Destino 1", INICIO, FIN, "1", 4, 9]
+
+# ---------- deserializar ----------
+ENCABEZADO = ["id", "destino", "ventana_inicio", "ventana_fin", "articulos", "id_viaje", "id_comprobante", "Solicitud"]
+@pytest.fixture
+def contexto(articulo1, articulo2):
+    articulo1.getter_id.return_value = 1
+    articulo2.getter_id.return_value = 2
+    return {Articulo: [articulo1, articulo2]}
+# Funcionamiento normal
+def test_solicitud_deserializar_ok(mock_validaciones, contexto, articulo1, articulo2):
+    archivo = [ENCABEZADO,
+               ["5", "Destino 1", "2026-10-11 09:00:00", "2026-10-11 12:00:00", "1,2", "", ""],
+               [],
+               ["6", "Destino 2", "2026-10-11 10:00:00", "2026-10-11 13:00:00", "2", "", ""]]
+    solicitudes = Solicitud.deserializar(archivo, contexto)
+    assert len(solicitudes) == 2
+    assert solicitudes[0].getter_id() == 5
+    assert solicitudes[0].getter_destino() == "Destino 1"
+    assert solicitudes[0].getter_ventana_inicio() == INICIO
+    assert solicitudes[0].getter_ventana_fin() == FIN
+    assert list(solicitudes[0].getter_articulos()) == [articulo1, articulo2]
+    assert solicitudes[1].getter_id() == 6
+    assert solicitudes[1].getter_destino() == "Destino 2"
+    assert list(solicitudes[1].getter_articulos()) == [articulo2]
+    # El viaje y el comprobante los asignan el Viaje y el Comprobante al cargarse
+    assert solicitudes[0].getter_viaje() is None
+    assert solicitudes[0].getter_comprobante() is None
+    # El próximo id continúa desde el mayor
+    assert Solicitud.curr_id == 6
+# Sin filas
+def test_solicitud_deserializar_soloEncabezado(mock_validaciones, contexto):
+    assert Solicitud.deserializar([ENCABEZADO], contexto) == []
+    assert Solicitud.curr_id == 0
+# Una solicitud sin artículos es inválida
+def test_solicitud_deserializar_sinArticulos(mock_validaciones, contexto):
+    with pytest.raises(DatoInvalidoError, match = "La solicitud debe tener al menos un artículo"):
+        Solicitud.deserializar([ENCABEZADO, ["5", "Destino 1", "2026-10-11 09:00:00", "2026-10-11 12:00:00", "", "", ""]], contexto)
+# Artículo inexistente
+def test_solicitud_deserializar_articuloInexistente(mock_validaciones, contexto):
+    with pytest.raises(KeyError):
+        Solicitud.deserializar([ENCABEZADO, ["5", "Destino 1", "2026-10-11 09:00:00", "2026-10-11 12:00:00", "99", "", ""]], contexto)
+# Lo serializado se puede volver a cargar
+def test_solicitud_serializar_deserializar(mock_validaciones, contexto, articulo1, articulo2):
+    original = Solicitud("Destino 1", INICIO, FIN, articulo1, articulo2)
+    fila = list(map(str, original.serializar()))
+    copia = Solicitud.deserializar([ENCABEZADO, fila], contexto)[0]
+    assert copia.getter_id() == original.getter_id()
+    assert copia.getter_destino() == original.getter_destino()
+    assert copia.getter_ventana_inicio() == original.getter_ventana_inicio()
+    assert copia.getter_ventana_fin() == original.getter_ventana_fin()
+    assert list(copia.getter_articulos()) == list(original.getter_articulos())

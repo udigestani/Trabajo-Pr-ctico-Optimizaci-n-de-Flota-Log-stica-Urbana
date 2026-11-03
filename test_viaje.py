@@ -6,7 +6,6 @@ from solicitud import Solicitud
 from articulo import Articulo
 from parada import Parada
 from cola import Cola
-from pila import Pila
 from itertools import chain
 from comprobante import Comprobante
 from incidente import Incidente
@@ -106,10 +105,6 @@ def solicitud_c(mocker):
     return mock
 
 @pytest.fixture
-def comprobante(mocker):
-    return mocker.Mock(spec = Comprobante)
-
-@pytest.fixture
 def incidente(mocker):
     return mocker.Mock(spec = Incidente)
 
@@ -117,37 +112,6 @@ def incidente(mocker):
 def mock_solicitud_clase(mocker, solicitud_a):
     mock = mocker.patch("viaje.Solicitud")
     mock.return_value = solicitud_a
-    return mock
-
-@pytest.fixture
-def mock_parada(mocker):
-    mock = mocker.patch("viaje.Parada")
-    def crear_parada_falsa(**kwargs):
-        parada = mocker.Mock(spec = Parada)
-        parada.getter_orden.return_value = kwargs["orden"]
-        parada.getter_solicitud.return_value = kwargs["solicitud"]
-        parada.getter_hora_prev.return_value = kwargs["hora_prev"]
-        return parada
-    mock.side_effect = crear_parada_falsa
-    return mock
-
-@pytest.fixture
-def mock_incidente(mocker, incidente):
-    mock = mocker.patch("viaje.Incidente")
-    mock.return_value = incidente
-    return mock
-
-# Por defecto las políticas sugieren el orden de carga: A, B
-@pytest.fixture
-def mock_vecinos(mocker, solicitud_a, solicitud_b):
-    mock = mocker.patch("viaje.Vecinos")
-    mock.sugerir_orden.return_value = [solicitud_a, solicitud_b]
-    return mock
-
-@pytest.fixture
-def mock_ventanas(mocker, solicitud_a, solicitud_b):
-    mock = mocker.patch("viaje.VentanasTiempo")
-    mock.sugerir_orden.return_value = [solicitud_a, solicitud_b]
     return mock
 
 @pytest.fixture
@@ -170,7 +134,7 @@ def viaje_con_solicitudes(viaje, solicitud_a, solicitud_b):
 
 @pytest.fixture
 def mock_validar_estado(mocker):
-    return mocker.patch.object(Viaje, "_validar_estado", autospec = True)
+    return mocker.patch.object(Viaje, "validar_estado", autospec = True)
 
 @pytest.fixture
 def mock_validar_recorrido(mocker):
@@ -179,9 +143,8 @@ def mock_validar_recorrido(mocker):
 # Fixtures para probar cada método sin depender de los demás: el estado se arma a mano y los colaboradores propios se mockean
 @pytest.fixture
 def viaje_cargado(viaje, solicitud_a, solicitud_b):
-    viaje.solicitudes = [solicitud_a, solicitud_b]
-    viaje.historial_solicitudes.apilar(solicitud_a)
-    viaje.historial_solicitudes.apilar(solicitud_b)
+    viaje.setter_solicitudes([solicitud_a, solicitud_b])
+    viaje.setter_historial_solicitudes([solicitud_a, solicitud_b])
     return viaje
 
 @pytest.fixture
@@ -207,17 +170,12 @@ def cola_paradas(mocker, parada_1):
     mock.desencolar.return_value = parada_1
     return mock
 
-# Clase Cola mockeada: lo que instancia iniciar_viaje es cola_paradas
+# La cola del viaje es la cola mockeada (el viaje la crea al setear las paradas)
 @pytest.fixture
-def mock_cola_clase(mocker, cola_paradas):
-    mock = mocker.patch("viaje.Cola")
-    mock.return_value = cola_paradas
-    return mock
-
-@pytest.fixture
-def viaje_con_paradas(viaje, cola_paradas):
-    viaje.estado = "EN_CURSO"
-    viaje.paradas = cola_paradas
+def viaje_con_paradas(viaje, cola_paradas, mocker):
+    mocker.patch("viaje.Cola", return_value = cola_paradas)
+    viaje.setter_paradas([])
+    viaje.setter_estado("EN_CURSO")
     return viaje
 
 @pytest.fixture
@@ -229,44 +187,32 @@ def mock_distancia_total(mocker):
     return mocker.patch.object(Viaje, "distancia_total", autospec = True, return_value = 50)
 
 @pytest.fixture
-def mock_costo_total(mocker):
-    return mocker.patch.object(Viaje, "costo_total", autospec = True, return_value = 110)
-
-@pytest.fixture
-def mock_ordenar_solicitudes(mocker, solicitud_a, solicitud_b):
-    return mocker.patch.object(Viaje, "ordenar_solicitudes", autospec = True, return_value = [solicitud_a, solicitud_b])
-
-@pytest.fixture
-def mock_finalizar_viaje(mocker):
-    return mocker.patch.object(Viaje, "finalizar_viaje", autospec = True)
-
-@pytest.fixture
-def viaje_en_curso(viaje_con_solicitudes, mock_parada, mock_vecinos):
-    viaje_con_solicitudes.iniciar_viaje()
+def viaje_en_curso(viaje_con_solicitudes, solicitud_a, solicitud_b, parada_1, parada_2):
+    viaje_con_solicitudes.comenzar([solicitud_a, solicitud_b], [parada_1, parada_2])
     return viaje_con_solicitudes
 
 
 # ---------- __init__ ----------
 # Funcionamiento normal
 def test_viaje_ok(viaje, transporte, matriz):
-    assert viaje.transporte is transporte
-    assert viaje.deposito == "Deposito"
-    assert viaje.horario == HORARIO
-    assert viaje.matriz is matriz
-    assert viaje.estado == "PLANIFICADO"
+    assert viaje.getter_transporte() is transporte
+    assert viaje.getter_deposito() == "Deposito"
+    assert viaje.getter_horario() == HORARIO
+    assert viaje.getter_matriz() is matriz
+    assert viaje.getter_estado() == "PLANIFICADO"
     assert viaje.getter_peso() == 0
     assert viaje.getter_volumen() == 0
-    assert viaje.solicitudes == []
-    assert viaje.incidentes == []
-    assert viaje.paradas.esVacia()
-    assert isinstance(viaje.paradas, Cola)
-    assert viaje.paradas_resueltas == []
-    assert viaje.historial_solicitudes.esVacia()
-    assert isinstance(viaje.historial_solicitudes, Pila)
+    assert viaje.getter_solicitudes() == []
+    assert viaje.getter_incidentes() == []
+    assert viaje.paradas_pendientes() == []
+    assert viaje.getter_paradas() == []
+    # Historial vacío: no hay nada para deshacer
+    with pytest.raises(ViajeVacioError):
+        viaje.deshacer_ultima_solicitud()
     # id
-    assert viaje.id == 1
+    assert viaje.getter_id() == 1
     viaje2 = Viaje(transporte, "Deposito", HORARIO, matriz)
-    assert viaje2.id == 2
+    assert viaje2.getter_id() == 2
 # Validaciones
 def test_viaje_validaciones(mock_validaciones, transporte, matriz):
     Viaje(transporte, "Deposito", HORARIO, matriz)
@@ -303,7 +249,7 @@ def test_viaje_matrizInvalida_sePropaga(mock_validaciones, transporte):
 
 
 # ---------- Getters ----------
-def test_viaje_getters(viaje, transporte):
+def test_viaje_getters(viaje, transporte, matriz):
     assert viaje.getter_estado() == "PLANIFICADO"
     assert viaje.getter_peso() == 0
     assert viaje.getter_volumen() == 0
@@ -314,6 +260,9 @@ def test_viaje_getters(viaje, transporte):
     assert viaje.getter_solicitudes() == []
     assert viaje.getter_id() == 1
     assert viaje.getter_transporte() is transporte
+    assert viaje.getter_deposito() == "Deposito"
+    assert viaje.getter_horario() == HORARIO
+    assert viaje.getter_matriz() is matriz
     assert viaje.getter_incidentes() == []
     assert viaje.getter_paradas() == []
 
@@ -339,15 +288,16 @@ def test_viaje_getters_viajeEnCurso(viaje_en_curso, solicitud_a, solicitud_b):
     assert viaje_en_curso.paradas_pendientes() == paradas
 
 def test_viaje_getters_conParadaResuelta(viaje_en_curso, solicitud_a, solicitud_b):
-    viaje_en_curso.registrar_entrega(hora(9, 30), "Receptor", 100)
+    viaje_en_curso.cerrar_parada_actual()
     paradas = viaje_en_curso.getter_paradas()
     assert list(map(lambda p: p.getter_solicitud(), paradas)) == [solicitud_a, solicitud_b]
     pendientes = viaje_en_curso.paradas_pendientes()
     assert list(map(lambda p: p.getter_solicitud(), pendientes)) == [solicitud_b]
     assert pendientes[0] is paradas[1]
 
-def test_viaje_getters_conIncidente(viaje_en_curso, mock_incidente, incidente, solicitud_a, solicitud_b):
-    assert viaje_en_curso.registrar_incidente("AUSENTE", hora(9, 30), "No había nadie") is incidente
+def test_viaje_getters_conIncidente(viaje_en_curso, incidente, solicitud_a, solicitud_b):
+    viaje_en_curso.agregar_incidente(incidente)
+    viaje_en_curso.cerrar_parada_actual()
     assert viaje_en_curso.getter_incidentes() == [incidente]
     paradas = viaje_en_curso.getter_paradas()
     assert list(map(lambda p: p.getter_solicitud(), paradas)) == [solicitud_a, solicitud_b]
@@ -452,8 +402,8 @@ def test_agregarSolicitud_maximaCapacidadPermitida(viaje, solicitud_a, solicitud
     solicitud_b.getter_volumen.return_value = 3
     viaje.agregar_solicitud(solicitud_a)
     viaje.agregar_solicitud(solicitud_b)
-    assert viaje.getter_peso() == 500 == viaje.transporte.getter_peso_max()
-    assert viaje.getter_volumen() == 8 == viaje.transporte.getter_volumen()
+    assert viaje.getter_peso() == 500 == viaje.getter_transporte().getter_peso_max()
+    assert viaje.getter_volumen() == 8 == viaje.getter_transporte().getter_volumen()
 # exceso de peso
 def test_agregarSolicitud_excesoPeso(viaje, solicitud_a, mock_validar_estado):
     solicitud_a.getter_peso.return_value = 501
@@ -467,6 +417,15 @@ def test_agregarSolicitud_excesoPeso(viaje, solicitud_a, mock_validar_estado):
 def test_agregarSolicitud_excesoVolumen(viaje, solicitud_a, mock_validar_estado):
     solicitud_a.getter_volumen.return_value = 9
     with pytest.raises(ExcesoVolumenError, match = "Capacidad excedida: El volumen 9 supera el volumen máximo del transporte 8"):
+        viaje.agregar_solicitud(solicitud_a)
+    assert viaje.getter_solicitudes() == []
+    assert viaje.getter_peso() == 0
+    assert viaje.getter_volumen() == 0
+    solicitud_a.setter_viaje.assert_not_called()
+# destino sin tramo de regreso al deposito
+def test_agregarSolicitud_sinTramoDeRegreso_sePropaga(viaje, matriz, solicitud_a, mock_validar_estado):
+    matriz.obtener_distancia.side_effect = [15, RutaIncompletaError("Destino A", "Deposito")]
+    with pytest.raises(RutaIncompletaError, match = "No existe distancia de Destino A a Deposito"):
         viaje.agregar_solicitud(solicitud_a)
     assert viaje.getter_solicitudes() == []
     assert viaje.getter_peso() == 0
@@ -496,7 +455,7 @@ def test_crearSolicitud_ok(viaje, mock_validar_estado, mock_solicitud_clase, moc
     mock_agregar_solicitud.assert_called_once_with(viaje, solicitud_a)
 # Errores se propagan
 def test_crearSolicitud_estadoInvalido_sePropaga(viaje, mock_validar_estado, mock_solicitud_clase, mock_agregar_solicitud, articulo):
-    viaje.estado = "FINALIZADO"
+    viaje.setter_estado("FINALIZADO")
     mock_validar_estado.side_effect = EstadoInvalidoError("crear_solicitud", "FINALIZADO")
     with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede crear_solicitud porque el estado es FINALIZADO"):
         viaje.crear_solicitud("Destino A", hora(9), hora(12), articulo)
@@ -535,19 +494,17 @@ def test_deshacerUltimaSolicitud_estadoInvalido_sePropaga(viaje_cargado, solicit
     mock_validar_estado.side_effect = EstadoInvalidoError("deshacer_ultima_solicitud", "EN_CURSO")
     with pytest.raises(EstadoInvalidoError, match = "No se puede deshacer_ultima_solicitud porque el estado es EN_CURSO"):
         viaje_cargado.deshacer_ultima_solicitud()
-    assert viaje_cargado.historial_solicitudes.ver_tope() == solicitud_b
     assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b]
     assert viaje_cargado.getter_peso() == 350
     assert viaje_cargado.getter_volumen() == 6
     solicitud_b.setter_viaje.assert_not_called()
+    # El historial no cambió: la última solicitud sigue siendo la primera en deshacerse
+    mock_validar_estado.side_effect = None
+    assert viaje_cargado.deshacer_ultima_solicitud() is solicitud_b
 # historial vacio se propaga
-def test_deshacerUltimaSolicitud_sinSolicitudes(viaje, mock_validar_estado, mocker):
-    mock_historial = mocker.Mock(spec = Pila)
-    mock_historial.esVacia.return_value = True
-    viaje.historial_solicitudes = mock_historial
+def test_deshacerUltimaSolicitud_sinSolicitudes(viaje, mock_validar_estado):
     with pytest.raises(ViajeVacioError, match = "No hay solicitudes para deshacer"):
         viaje.deshacer_ultima_solicitud()
-    mock_historial.desapilar.assert_not_called()
     assert viaje.getter_peso() == 0
     assert viaje.getter_volumen() == 0
 
@@ -557,7 +514,7 @@ def test_deshacerUltimaSolicitud_sinSolicitudes(viaje, mock_validar_estado, mock
 def test_validarRecorrido_ok(viaje, matriz, solicitud_a, solicitud_b, mock_agregar_solicitud, mocker):
     assert viaje.validar_recorrido([]) is True
     matriz.obtener_distancia.assert_called_once_with("Deposito", "Deposito")
-    viaje.solicitudes = [solicitud_a]
+    viaje.setter_solicitudes([solicitud_a])
     matriz.obtener_distancia.side_effect = [15, 10, 5]
     # Llega 9:30 a Destino A. Sale 9:40 y llega 10:00 a Destino B
     solicitud_a.getter_ventana_fin.return_value = hora(9, 30)
@@ -590,6 +547,39 @@ def test_validarRecorrido_tramoFaltante_sePropaga(viaje, matriz, solicitud_a, so
     with pytest.raises(RutaIncompletaError, match = "No existe distancia de Destino A a Destino B"):
         viaje.validar_recorrido([solicitud_a, solicitud_b])
     assert matriz.obtener_distancia.call_count == 2
+    # Falta el tramo de regreso al deposito
+    matriz.obtener_distancia.side_effect = [15, 10, RutaIncompletaError("Destino B", "Deposito")]
+    with pytest.raises(RutaIncompletaError, match = "No existe distancia de Destino B a Deposito"):
+        viaje.validar_recorrido([solicitud_a, solicitud_b])
+
+
+# ---------- calcular_horarios ----------
+# Funcionamiento normal
+def test_calcularHorarios_ok(viaje, solicitud_a, solicitud_b):
+    # Sale 9:00 y llega 9:30 a A. Sale 9:40 y llega 10:00 a B
+    solicitud_b.getter_ventana_inicio.return_value = hora(9)
+    assert viaje.calcular_horarios([solicitud_a, solicitud_b]) == [hora(9, 30), hora(10)]
+    assert viaje.calcular_horarios([solicitud_b]) == [hora(9, 50)]
+# Llega antes de que abra la ventana y espera
+def test_calcularHorarios_esperaInicioVentana(viaje, solicitud_a, solicitud_b):
+    # Llega 9:30 a A. Sale 9:40 y llega 10:00 a B, pero la ventana de B abre 10:30
+    assert viaje.calcular_horarios([solicitud_a, solicitud_b]) == [hora(9, 30), hora(10, 30)]
+# Ventana incumplida. Llegar justo al fin es válido
+def test_calcularHorarios_ventanaIncumplida(viaje, solicitud_a):
+    solicitud_a.getter_ventana_fin.return_value = hora(9, 30)
+    assert viaje.calcular_horarios([solicitud_a]) == [hora(9, 30)]
+    solicitud_a.getter_ventana_fin.return_value = hora(9, 29)
+    with pytest.raises(VentanaIncumplidaError, match = "Ventana incumplida: Se llegará a Destino A a las 2026-10-11 09:30:00 superando el límite 2026-10-11 09:29:00"):
+        viaje.calcular_horarios([solicitud_a])
+# Recorrido vacío
+def test_calcularHorarios_recorridoVacio(viaje, matriz):
+    assert viaje.calcular_horarios([]) == []
+    matriz.obtener_distancia.assert_not_called()
+# Error ruta incompleta se propaga
+def test_calcularHorarios_tramoFaltante_sePropaga(viaje, matriz, solicitud_a, solicitud_b):
+    matriz.obtener_distancia.side_effect = [15, RutaIncompletaError("Destino A", "Destino B")]
+    with pytest.raises(RutaIncompletaError, match = "No existe distancia de Destino A a Destino B"):
+        viaje.calcular_horarios([solicitud_a, solicitud_b])
 
 
 # ---------- distancia_total ----------
@@ -600,9 +590,12 @@ def test_distanciaTotal_ok(viaje_cargado, solicitud_a, solicitud_b, matriz, mock
     matriz.obtener_distancia.assert_any_call("Destino A", "Destino B")
     matriz.obtener_distancia.assert_any_call("Destino B", "Deposito")
     assert matriz.obtener_distancia.call_count == 3
+    # Sin argumentos parte del deposito con las solicitudes del viaje
+    matriz.obtener_distancia.side_effect = [15, 10, 25]
+    assert viaje_cargado.distancia_total() == 50
 def test_distanciaTotal_viajeVacio(viaje, matriz):
     matriz.obtener_distancia.return_value = 0
-    assert viaje.distancia_total("Deposito", viaje.solicitudes) == 0
+    assert viaje.distancia_total("Deposito", viaje.getter_solicitudes()) == 0
     matriz.obtener_distancia.assert_called_once_with("Deposito", "Deposito")
 def test_distanciaTotal_tramoFaltante_sePropaga(viaje_cargado, matriz, solicitud_a, solicitud_b):
     matriz.obtener_distancia.side_effect = [15, 10, RutaIncompletaError("Destino B", "Deposito")]
@@ -619,6 +612,15 @@ def test_distanciaTotal_otroOrden(viaje_cargado, solicitud_a, solicitud_b, matri
 def test_distanciaTotal_ordenVacio(viaje_cargado, matriz):
     assert viaje_cargado.distancia_total("Deposito", []) == 0
     matriz.obtener_distancia.assert_called_once_with("Deposito", "Deposito")
+
+
+# ---------- ultimo_lugar ----------
+def test_ultimoLugar_viajeVacio(viaje):
+    assert viaje.ultimo_lugar() == "Deposito"
+def test_ultimoLugar_conSolicitudes(viaje_con_solicitudes):
+    assert viaje_con_solicitudes.ultimo_lugar() == "Destino B"
+    viaje_con_solicitudes.deshacer_ultima_solicitud()
+    assert viaje_con_solicitudes.ultimo_lugar() == "Destino A"
 
 
 # A futuro: Costo total y el cálculo de impacto ambiental (delegado en transporte)
@@ -653,338 +655,47 @@ def test_impactoAmbiental_delegaEnElTransporte(viaje_cargado, transporte, mock_d
     transporte.calcular_impacto_ambiental.assert_called_once_with(50, 350)
 
 
-# ---------- ordenar_solicitudes ----------
-# Funcionamiento normal
-def test_ordenarSolicitudes_ok(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
-    # Gana solicitudes
-    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
-    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
-    mock_costo_total.side_effect = [100, 150, 200]
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.assert_called_once_with("Deposito", [solicitud_a, solicitud_b, solicitud_c], matriz)
-    mock_ventanas.sugerir_orden.assert_called_once_with("Deposito", [solicitud_a, solicitud_b, solicitud_c], matriz)
-    assert mock_validar_recorrido.call_count == 3
-    mock_validar_recorrido.assert_any_call(viaje_cargado, [solicitud_a, solicitud_b, solicitud_c])
-    mock_validar_recorrido.assert_any_call(viaje_cargado, (solicitud_b, solicitud_c, solicitud_a))
-    mock_validar_recorrido.assert_any_call(viaje_cargado, (solicitud_c, solicitud_a, solicitud_b))
-    assert mock_costo_total.call_count == 3
-    assert viaje_cargado.getter_estado() == "PLANIFICADO"
-    # Gana vecinos
-    mock_costo_total.side_effect = [150, 100, 200]
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_b, solicitud_c, solicitud_a]
-    # Gana ventanas
-    mock_costo_total.side_effect = [150, 200, 100]
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_c, solicitud_a, solicitud_b]
-    assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b, solicitud_c] # No se modifica solicitudes
-def test_ordenarSolicitudes_empate(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
-    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
-    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
-    mock_costo_total.return_value = 100
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b, solicitud_c]
-def test_ordenarSolicitudes_vecinosVentanaIncumplida(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
-    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
-    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
-    mock_validar_recorrido.side_effect = [True, VentanaIncumplidaError("Destino A", hora(10, 30), hora(10, 20)), True]
-    mock_costo_total.side_effect = [100, 90]
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_c, solicitud_a, solicitud_b]
-    assert mock_validar_recorrido.call_count == 3
-    assert mock_costo_total.call_count == 2
-def test_ordenarSolicitudes_ventanasVentanaIncumplida(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
-    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
-    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
-    mock_validar_recorrido.side_effect = [True, True, VentanaIncumplidaError("Destino A", hora(10, 30), hora(10, 20))]
-    mock_costo_total.side_effect = [100, 90]
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_b, solicitud_c, solicitud_a]
-    assert mock_validar_recorrido.call_count == 3
-    assert mock_costo_total.call_count == 2
-def test_ordenarSolicitudes_vecinosRutaIncompleta(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
-    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.side_effect = RutaIncompletaError("Destino B", "Destino A")
-    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
-    mock_costo_total.side_effect = [100, 90]
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_c, solicitud_a, solicitud_b]
-    assert mock_validar_recorrido.call_count == 2
-    mock_validar_recorrido.assert_any_call(viaje_cargado, [solicitud_a, solicitud_b, solicitud_c])
-    mock_validar_recorrido.assert_any_call(viaje_cargado, (solicitud_c, solicitud_a, solicitud_b))
-def test_ordenarSolicitudes_ventanasRutaIncompleta(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
-    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
-    mock_ventanas.sugerir_orden.side_effect = RutaIncompletaError("Destino B", "Destino A")
-    mock_costo_total.side_effect = [100, 90]
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_b, solicitud_c, solicitud_a]
-def test_ordenarSolicitudes_vecinosYVentanaFallan(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
-    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.side_effect = RutaIncompletaError("Deposito", "Destino B")
-    mock_ventanas.sugerir_orden.side_effect = RutaIncompletaError("Deposito", "Destino B")
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_a, solicitud_b, solicitud_c]
-    mock_validar_recorrido.assert_called_once_with(viaje_cargado, [solicitud_a, solicitud_b, solicitud_c])
-def test_ordenarSolicitudes_validarRecorridoFalla_sePropaga(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
-    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
-    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
-    mock_validar_recorrido.side_effect = VentanaIncumplidaError("Destino A", hora(10, 30), hora(10, 20))
-    with pytest.raises(VentanaIncumplidaError):
-        viaje_cargado.ordenar_solicitudes()
-    assert mock_validar_recorrido.call_count == 3
-    assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b, solicitud_c]
-def test_ordenarSolicitudes_ordenActualRutaIncompleta_ganaPolitica(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, matriz, solicitud_a, solicitud_b, solicitud_c):
-    viaje_cargado.solicitudes = [solicitud_a, solicitud_b, solicitud_c]
-    mock_vecinos.sugerir_orden.return_value = [solicitud_b, solicitud_c, solicitud_a]
-    mock_ventanas.sugerir_orden.return_value = [solicitud_c, solicitud_a, solicitud_b]
-    mock_costo_total.side_effect = [RutaIncompletaError("Deposito", "Destino A"), 90, 110]
-    assert viaje_cargado.ordenar_solicitudes() == [solicitud_b, solicitud_c, solicitud_a]
-def test_ordenarSolicitudes_ordenActualRutaIncompleta_politicasFallan_sePropaga(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, solicitud_a, solicitud_b):
-    mock_costo_total.side_effect = RutaIncompletaError("Deposito", "Destino A")
-    mock_vecinos.sugerir_orden.side_effect = RutaIncompletaError("Deposito", "Destino B")
-    mock_ventanas.sugerir_orden.side_effect = RutaIncompletaError("Deposito", "Destino B")
-    with pytest.raises(RutaIncompletaError, match = "No existe distancia de Deposito a Destino A"):
-        viaje_cargado.ordenar_solicitudes()
-    assert viaje_cargado.getter_solicitudes() == [solicitud_a, solicitud_b]
-def test_ordenarSolicitudes_ordenActualRutaIncompleta_recorridosInvalidos_sePropaga(viaje_cargado, mock_vecinos, mock_ventanas, mock_validar_recorrido, mock_costo_total, solicitud_a, solicitud_b):
-    mock_costo_total.side_effect = RutaIncompletaError("Deposito", "Destino A")
-    mock_validar_recorrido.side_effect = [True, VentanaIncumplidaError("Destino A", hora(11), hora(10, 45)), VentanaIncumplidaError("Destino A", hora(11), hora(10, 45))]
-    with pytest.raises(RutaIncompletaError, match = "No existe distancia de Deposito a Destino A"):
-        viaje_cargado.ordenar_solicitudes()
-    assert mock_validar_recorrido.call_count == 3
-
-# ---------- iniciar_viaje ----------
-# Funcionamiento normal
-def test_iniciarViaje_ok(viaje_cargado, matriz, mocker, mock_validar_estado, mock_ordenar_solicitudes, mock_parada, mock_cola_clase, cola_paradas, solicitud_a, solicitud_b, transporte):
-    matriz.obtener_distancia.side_effect = [15, 10]
-    viaje_cargado.iniciar_viaje()
-    mock_validar_estado.assert_called_once_with(viaje_cargado, "iniciar_viaje", "PLANIFICADO")
-    mock_ordenar_solicitudes.assert_called_once_with(viaje_cargado)
-    mock_cola_clase.assert_called_once_with()
-    assert viaje_cargado.paradas_resueltas == []
-    # solicitud a
-    solicitud_a.getter_destino.assert_called_once()
-    matriz.obtener_distancia.assert_any_call == ("Deposito", "Destino A")
-    assert transporte.getter_velocidad.call_count == 2
-    solicitud_a.getter_ventana_inicio.assert_called_once()
-    mock_parada.assert_any_call(orden = 1, solicitud = solicitud_a, hora_prev = hora(9, 30), hora_real = None)
-    # solicitud b
-    solicitud_b.getter_destino.assert_called_once()
-    matriz.obtener_distancia.assert_any_call == ("Destino A", "Destino B")
-    assert solicitud_b.getter_ventana_inicio.call_count == 2
-    mock_parada.assert_any_call(orden = 2, solicitud = solicitud_b, hora_prev = hora(10, 30), hora_real = None)
-    assert viaje_cargado.paradas is cola_paradas
-    assert mock_parada.call_count == 2
-    assert viaje_cargado.getter_estado() == "EN_CURSO"
-    paradas_encoladas = map(lambda l: l.args[0], cola_paradas.encolar.call_args_list)
-    assert list(map(lambda p: p.getter_solicitud(), paradas_encoladas)) == [solicitud_a, solicitud_b]
-# Usa el orden de ordenar_solicitudes
-def test_iniciarViaje_ordenInverso(viaje_cargado, matriz, mocker, mock_validar_estado, mock_ordenar_solicitudes, mock_parada, mock_cola_clase, cola_paradas, solicitud_a, solicitud_b):
-    mock_ordenar_solicitudes.return_value = [solicitud_b, solicitud_a]
-    matriz.obtener_distancia.side_effect = [25, 10]
-    viaje_cargado.iniciar_viaje()
-    assert viaje_cargado.getter_solicitudes() == [solicitud_b, solicitud_a]
-    mock_parada.assert_any_call(orden = 1, solicitud = solicitud_b, hora_prev = hora(10, 30), hora_real = None)
-    mock_parada.assert_any_call(orden = 2, solicitud = solicitud_a, hora_prev = hora(11), hora_real = None)
-# Estado inválido se propaga
-def test_iniciarViaje_estadoInvalido_sePropaga(viaje_cargado, mock_validar_estado, mock_ordenar_solicitudes, mock_parada, mock_cola_clase):
-    mock_validar_estado.side_effect = EstadoInvalidoError("iniciar_viaje", "EN_CURSO")
-    with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede iniciar_viaje porque el estado es EN_CURSO"):
-        viaje_cargado.iniciar_viaje()
-    assert viaje_cargado.getter_estado() == "PLANIFICADO"
-    mock_ordenar_solicitudes.assert_not_called()
-    mock_parada.assert_not_called()
-    mock_cola_clase.assert_not_called()
-# ViajeVacio error
-def test_iniciarViaje_viajeVacio(viaje, mock_validar_estado, mock_ordenar_solicitudes, mock_parada, mock_cola_clase):
-    with pytest.raises(ViajeVacioError, match = "Viaje Vacio: El viaje aún no tiene solicitudes"):
-        viaje.iniciar_viaje()
-    assert viaje.getter_estado() == "PLANIFICADO"
-    mock_ordenar_solicitudes.assert_not_called()
-    mock_parada.assert_not_called()
-    mock_cola_clase.assert_not_called()
-# Éste error no debería suceder nunca. Pero si cambiamos el proyecto, para que no se vayan validando las solicitudes cuando se agregan, y se valida solo al inicio el viaje, entonces en ese caso ésto es útil
-def test_iniciarViaje_tramoFaltante_sePropaga(viaje_cargado, matriz, mock_validar_estado, mock_ordenar_solicitudes, mock_parada, mock_cola_clase):
-    matriz.obtener_distancia.side_effect = RutaIncompletaError("Deposito", "Destino A")
-    with pytest.raises(RutaIncompletaError):
-        viaje_cargado.iniciar_viaje()
-    assert viaje_cargado.getter_estado() == "PLANIFICADO"
-    mock_parada.assert_not_called()
-
-
-# ---------- _validar_estado ----------
+# ---------- validar_estado ----------
 # Funcionamiento normal
 def test_validarEstado_estadoCorrecto_noLanza(viaje):
-    assert viaje.estado == "PLANIFICADO"
-    assert viaje._validar_estado("iniciar_viaje", "PLANIFICADO") is None
-    viaje.estado = "EN_CURSO"
-    assert viaje._validar_estado("registrar_entrega", "EN_CURSO") is None
-    viaje.estado = "FINALIZADO"
-    assert viaje._validar_estado("mostrar detalles", "FINALIZADO") is None
+    assert viaje.getter_estado() == "PLANIFICADO"
+    assert viaje.validar_estado("iniciar_viaje", "PLANIFICADO") is None
+    viaje.setter_estado("EN_CURSO")
+    assert viaje.validar_estado("registrar_entrega", "EN_CURSO") is None
+    viaje.setter_estado("FINALIZADO")
+    assert viaje.validar_estado("mostrar detalles", "FINALIZADO") is None
 # EstadoInvalido
 def test_validarEstado_estadoInvalido(viaje):
     # Desde planificado
-    assert viaje.estado == "PLANIFICADO"
+    assert viaje.getter_estado() == "PLANIFICADO"
     with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede registrar_entrega porque el estado es PLANIFICADO"):
-        viaje._validar_estado("registrar_entrega", "EN_CURSO")
+        viaje.validar_estado("registrar_entrega", "EN_CURSO")
     with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede mostrar_detalles porque el estado es PLANIFICADO"):
-        viaje._validar_estado("mostrar_detalles", "FINALIZADO")
-    assert viaje.estado == "PLANIFICADO"
+        viaje.validar_estado("mostrar_detalles", "FINALIZADO")
+    assert viaje.getter_estado() == "PLANIFICADO"
     # Desde en_curso
-    viaje.estado = "EN_CURSO"
+    viaje.setter_estado("EN_CURSO")
     with pytest.raises(EstadoInvalidoError, match = "No se puede iniciar_viaje porque el estado es EN_CURSO"):
-        viaje._validar_estado("iniciar_viaje", "PLANIFICADO")
+        viaje.validar_estado("iniciar_viaje", "PLANIFICADO")
     with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede mostrar_detalles porque el estado es EN_CURSO"):
-        viaje._validar_estado("mostrar_detalles", "FINALIZADO")
+        viaje.validar_estado("mostrar_detalles", "FINALIZADO")
     # Desde finalizado
-    viaje.estado = "FINALIZADO"
+    viaje.setter_estado("FINALIZADO")
     with pytest.raises(EstadoInvalidoError, match = "No se puede iniciar_viaje porque el estado es FINALIZADO"):
-        viaje._validar_estado("iniciar_viaje", "PLANIFICADO")
+        viaje.validar_estado("iniciar_viaje", "PLANIFICADO")
     with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede registrar_entrega porque el estado es FINALIZADO"):
-        viaje._validar_estado("registrar_entrega", "EN_CURSO")
-
-
-# ---------- registrar_entrega ----------
-# Funcionamiento normal
-def test_registrarEntrega_ok(viaje_con_paradas, cola_paradas, parada_1, comprobante, mock_validar_estado, mock_validaciones, mock_finalizar_viaje):
-    parada_1.generar_comprobante.return_value = comprobante
-    resultado = viaje_con_paradas.registrar_entrega(hora(9, 35), "Juan", 100)
-    assert resultado is comprobante
-    mock_validar_estado.assert_called_once_with(viaje_con_paradas, "registrar_entrega", "EN_CURSO")
-    mock_validaciones.validar_ventana.assert_called_once_with(HORARIO, hora(9, 35), nombre_inicio = "fecha de salida del viaje", nombre_fin = "fecha de entrega")
-    assert cola_paradas.esVacia.call_count == 2
-    cola_paradas.frente.assert_called_once_with()
-    parada_1.generar_comprobante.assert_called_once_with("Juan", hora(9, 35), 100)
-    cola_paradas.desencolar.assert_called_once_with()
-    assert viaje_con_paradas.paradas_resueltas == [parada_1]
-    mock_finalizar_viaje.assert_not_called()
-def test_registrarEntrega_conParadaPrevia(mocker, viaje_con_paradas, parada_1, parada_2, mock_validar_estado, mock_validaciones, cola_paradas, mock_finalizar_viaje):
-    comprobante2 = mocker.Mock(spec = Comprobante)
-    cola_paradas.frente.side_effect = [parada_1, parada_2]
-    cola_paradas.desencolar.side_effect = [parada_1, parada_2]
-    cola_paradas.esVacia.side_effect = [False, False, False, True]
-    parada_1.generar_comprobante.return_value = comprobante
-    parada_2.generar_comprobante.return_value = comprobante2
-    assert viaje_con_paradas.registrar_entrega(hora(9, 35), "Massimo", 120) is comprobante
-    parada_1.getter_hora_real.return_value = hora(9, 35)
-    assert viaje_con_paradas.registrar_entrega(hora(10, 40), "Uriel", 120) is comprobante2
-    parada_1.generar_comprobante.assert_called_once_with("Massimo", hora(9, 35), 120)
-    parada_2.generar_comprobante.assert_called_once_with("Uriel", hora(10, 40), 120)
-    mock_validaciones.validar_ventana.assert_any_call(hora(9, 35), hora(10, 40), nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha de entrega")
-    assert viaje_con_paradas.paradas_resueltas == [parada_1, parada_2]
-    mock_finalizar_viaje.assert_called_once_with(viaje_con_paradas)
-# Estado inválido se propaga
-def test_registrarEntrega_estadoInvalido_sePropaga(viaje_con_paradas, cola_paradas, parada_1, mock_validar_estado, mock_validaciones):
-    viaje_con_paradas.estado = "PLANIFICADO"
-    mock_validar_estado.side_effect = EstadoInvalidoError("registrar_entrega", "PLANIFICADO")
-    with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede registrar_entrega porque el estado es PLANIFICADO"):
-        viaje_con_paradas.registrar_entrega(hora(10), "Juan", 100)
-    mock_validaciones.validar_ventana.assert_not_called()
-    parada_1.generar_comprobante.assert_not_called()
-    cola_paradas.desencolar.assert_not_called()
-# Ventana inválida
-def test_registrarEntrega_ventanaInvalida_sePropaga(viaje_con_paradas, cola_paradas, parada_1, parada_2, mock_validar_estado, mock_validaciones):
-    viaje_con_paradas.paradas_resueltas.append(parada_2)
-    parada_2.getter_hora_real.return_value = HORARIO
-    mock_validaciones.validar_ventana.side_effect = VentanaInvalidaError(HORARIO, hora(8), "fecha de la parada previa", "fecha de entrega")
-    with pytest.raises(VentanaInvalidaError, match = re.escape("La fecha de la parada previa (2026-10-11 09:00:00) debe ser anterior a la fecha de entrega (2026-10-11 08:00:00)")):
-        viaje_con_paradas.registrar_entrega(hora(8), "Manuel", 100)
-    mock_validaciones.validar_ventana.assert_called_once_with(HORARIO, hora(8), nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha de entrega")
-    parada_1.generar_comprobante.assert_not_called()
-    cola_paradas.desencolar.assert_not_called()
-# sin paradas pendientes
-def test_registrarEntrega_sinParadasPendientes(viaje_con_paradas, cola_paradas, mock_validar_estado, mock_validaciones):
-    cola_paradas.esVacia.return_value = True
-    with pytest.raises(SinParadasPendientesError, match = "Sin paradas pendientes: No se puede registrar_entrega"):
-        viaje_con_paradas.registrar_entrega(hora(10), "Massimo", 100)
-    cola_paradas.frente.assert_not_called()
-    cola_paradas.desencolar.assert_not_called()
-    assert viaje_con_paradas.paradas_resueltas == []
-# comprobanteInvalido se propaga
-def test_registrarEntrega_comprobanteInvalido_sePropaga(viaje_con_paradas, cola_paradas, parada_1, mock_validar_estado, mock_finalizar_viaje, mock_validaciones):
-    parada_1.generar_comprobante.side_effect = DatoInvalidoError("El receptor no debe estar vacío")
-    with pytest.raises(DatoInvalidoError, match = "El receptor no debe estar vacío"):
-        viaje_con_paradas.registrar_entrega(hora(9, 35), "   ", 1500)
-    cola_paradas.desencolar.assert_not_called()
-    assert viaje_con_paradas.paradas_resueltas == []
-    mock_finalizar_viaje.assert_not_called()
-
-
-# ---------- registrar_incidente ----------
-# Funcionamiento normal
-def test_registrarIncidente_ok(viaje_con_paradas, cola_paradas, parada_1, mock_validar_estado, mock_validaciones, mock_incidente, incidente, solicitud_a, mock_finalizar_viaje):
-    resultado = viaje_con_paradas.registrar_incidente("DAÑO", hora(9, 40), "Pinchazo", rueda = "delantera", costo = 500)
-    assert resultado is incidente
-    mock_validar_estado.assert_called_once_with(viaje_con_paradas, "registrar_incidente", "EN_CURSO")
-    mock_validaciones.validar_ventana.assert_called_once_with(HORARIO, hora(9, 40), nombre_inicio = "fecha de salida del viaje", nombre_fin = "fecha del incidente")
-    mock_incidente.assert_called_once_with("DAÑO", hora(9, 40), "Pinchazo", solicitud_a, rueda = "delantera", costo = 500)
-    assert viaje_con_paradas.getter_incidentes() == [incidente]
-    parada_1.setter_estado.assert_called_once_with("FALLIDA")
-    parada_1.setter_hora_real.assert_called_once_with(hora(9, 40))
-    parada_1.generar_comprobante.assert_not_called()
-    assert cola_paradas.esVacia.call_count == 2
-    cola_paradas.desencolar.assert_called_once_with()
-    assert viaje_con_paradas.paradas_resueltas == [parada_1]
-    mock_finalizar_viaje.assert_not_called()
-# con parada previa
-def test_registrarIncidente_conParadaPrevia(viaje_con_paradas, parada_1, mocker, mock_validar_estado, mock_validaciones, mock_incidente, mock_finalizar_viaje):
-    parada_previa = mocker.Mock(spec = Parada)
-    parada_previa.getter_hora_real.return_value = hora(9, 40)
-    viaje_con_paradas.paradas_resueltas.append(parada_previa)
-    viaje_con_paradas.registrar_incidente("DAÑO", hora(10, 45), "Caja rota")
-    mock_validaciones.validar_ventana.assert_called_once_with(hora(9, 40), hora(10, 45), nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha del incidente")
-    assert viaje_con_paradas.paradas_resueltas == [parada_previa, parada_1]
-def test_registrarIncidente_finalizarViaje(viaje_con_paradas, cola_paradas, mock_validar_estado, mock_incidente, mock_finalizar_viaje, mock_validaciones, parada_1):
-    cola_paradas.esVacia.side_effect = [False, True]
-    viaje_con_paradas.registrar_incidente("AUSENTE", hora(9, 40), "No había nadie")
-    mock_finalizar_viaje.assert_called_once_with(viaje_con_paradas)
-# Estado inválido error se propaga
-def test_registrarIncidente_estadoInvalido_sePropaga(viaje_con_paradas, cola_paradas, mock_validar_estado, mock_validaciones, mock_incidente):
-    viaje_con_paradas.estado = "PLANIFICADO"
-    mock_validar_estado.side_effect = EstadoInvalidoError("registrar_incidente", "PLANIFICADO")
-    with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede registrar_incidente porque el estado es PLANIFICADO"):
-        viaje_con_paradas.registrar_incidente("DAÑO", hora(10), "Pinchazo")
-    mock_validaciones.validar_ventana.assert_not_called()
-    mock_incidente.assert_not_called()
-    assert viaje_con_paradas.getter_incidentes() == []
-    cola_paradas.desencolar.assert_not_called()
-# Ventana inválida error se propaga
-def test_registrarIncidente_anteriorALaSalida_sePropaga(viaje_con_paradas, cola_paradas, mock_validar_estado, mock_validaciones, mock_incidente):
-    mock_validaciones.validar_ventana.side_effect = VentanaInvalidaError(HORARIO, hora(8), "fecha de salida del viaje", "fecha del incidente")
-    with pytest.raises(VentanaInvalidaError, match = re.escape("La fecha de salida del viaje (2026-10-11 09:00:00) debe ser anterior a la fecha del incidente (2026-10-11 08:00:00)")):
-        viaje_con_paradas.registrar_incidente("DAÑO", hora(8), "Pinchazo")
-    mock_validaciones.validar_ventana.assert_called_once_with(HORARIO, hora(8), nombre_inicio = "fecha de salida del viaje", nombre_fin = "fecha del incidente")
-    mock_incidente.assert_not_called()
-    assert viaje_con_paradas.getter_incidentes() == []
-    cola_paradas.desencolar.assert_not_called()
-# Sin paradas pendientes
-def test_registrarIncidente_sinParadasPendientes(viaje_con_paradas, cola_paradas, mock_validar_estado, mock_incidente, mock_validaciones):
-    cola_paradas.esVacia.return_value = True
-    with pytest.raises(SinParadasPendientesError, match = "Sin paradas pendientes: No se puede registrar_incidente"):
-        viaje_con_paradas.registrar_incidente("DAÑO", hora(10), "Pinchazo")
-    mock_incidente.assert_not_called()
-    assert viaje_con_paradas.getter_incidentes() == []
-    cola_paradas.frente.assert_not_called()
-    cola_paradas.desencolar.assert_not_called()
-# Incidente inválido se propaga
-def test_registrarIncidente_incidenteInvalido_sePropaga(viaje_con_paradas, cola_paradas, parada_1, mock_validar_estado, mock_validaciones, mock_incidente, mock_finalizar_viaje):
-    mock_incidente.side_effect = DatoInvalidoError("El tipo debe ser uno de: DAÑO, AUSENTE, RETRASO")
-    with pytest.raises(DatoInvalidoError, match = "El tipo debe ser uno de: DAÑO, AUSENTE, RETRASO"):
-        viaje_con_paradas.registrar_incidente("CHOQUE", hora(9, 40), "Pinchazo")
-    parada_1.setter_estado.assert_not_called()
-    parada_1.setter_hora_real.assert_not_called()
-    cola_paradas.desencolar.assert_not_called()
-    assert viaje_con_paradas.getter_incidentes() == []
-    assert viaje_con_paradas.paradas_resueltas == []
-    mock_finalizar_viaje.assert_not_called()
+        viaje.validar_estado("registrar_entrega", "EN_CURSO")
 
 
 # ---------- finalizar_viaje ----------
 # Funcionamiento normal
-def test_finalizarViaje_ok(viaje_con_paradas, cola_paradas, mock_validar_estado):
+def test_finalizarViaje_ok(viaje_con_paradas, cola_paradas, mock_validar_estado, capsys):
     cola_paradas.esVacia.return_value = True
     assert viaje_con_paradas.finalizar_viaje() is None
     mock_validar_estado.assert_called_once_with(viaje_con_paradas, "finalizar_viaje", "EN_CURSO")
     cola_paradas.esVacia.assert_called_once()
     assert viaje_con_paradas.getter_estado() == "FINALIZADO"
+    assert capsys.readouterr().out == ""   # El dominio no imprime
 # Quedan paradas pendientes
 def test_finalizarViaje_conParadasPendientes(viaje_con_paradas, cola_paradas, mock_validar_estado):
     cola_paradas.esVacia.return_value = False
@@ -998,3 +709,247 @@ def test_finalizarViaje_estadoInvalido_sePropaga(viaje, mock_validar_estado):
     with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede finalizar_viaje porque el estado es PLANIFICADO"):
         viaje.finalizar_viaje()
     assert viaje.getter_estado() == "PLANIFICADO"
+
+
+# ---------- es_parada_actual ----------
+# Funcionamiento normal
+def test_esParadaActual_ok(viaje_en_curso, parada_1, parada_2):
+    assert viaje_en_curso.es_parada_actual(parada_1)
+    # No es el frente de la cola
+    assert not viaje_en_curso.es_parada_actual(parada_2)
+    viaje_en_curso.cerrar_parada_actual()
+    assert not viaje_en_curso.es_parada_actual(parada_1)
+    assert viaje_en_curso.es_parada_actual(parada_2)
+# Viaje planificado, aunque la parada esté en la cola
+def test_esParadaActual_viajePlanificado(viaje, parada_1):
+    viaje.setter_paradas([parada_1])
+    assert viaje.getter_estado() == "PLANIFICADO"
+    assert not viaje.es_parada_actual(parada_1)
+# Viaje finalizado (cola vacía)
+def test_esParadaActual_viajeFinalizado(viaje_en_curso, parada_1, parada_2):
+    viaje_en_curso.cerrar_parada_actual()
+    viaje_en_curso.cerrar_parada_actual()
+    assert viaje_en_curso.getter_estado() == "FINALIZADO"
+    assert not viaje_en_curso.es_parada_actual(parada_1)
+    assert not viaje_en_curso.es_parada_actual(parada_2)
+
+
+# ---------- serializar ----------
+def test_serializar_ok(viaje_en_curso, transporte, parada_1, parada_2, incidente):
+    transporte.getter_id.return_value = 4
+    parada_1.getter_id.return_value = 10
+    parada_2.getter_id.return_value = 11
+    incidente.getter_id.return_value = 7
+    viaje_en_curso.agregar_incidente(incidente)
+    viaje_en_curso.cerrar_parada_actual()
+    assert viaje_en_curso.serializar() == [1, 4, "Deposito", HORARIO, "EN_CURSO", "1,2", "7", "11", "10", "1,2"]
+    transporte.getter_id.assert_called_once()
+def test_serializar_viajeVacio(viaje, transporte):
+    transporte.getter_id.return_value = 4
+    assert viaje.serializar() == [1, 4, "Deposito", HORARIO, "PLANIFICADO", "", "", "", "", ""]
+
+
+# ---------- comenzar ----------
+# Funcionamiento normal
+def test_comenzar_ok(viaje_con_solicitudes, solicitud_a, solicitud_b, parada_1, parada_2, mock_validar_estado):
+    viaje_con_solicitudes.setter_paradas_resueltas([parada_2])
+    viaje_con_solicitudes.comenzar([solicitud_b, solicitud_a], [parada_1, parada_2])
+    mock_validar_estado.assert_called_once_with(viaje_con_solicitudes, "iniciar_viaje", "PLANIFICADO")
+    assert viaje_con_solicitudes.getter_estado() == "EN_CURSO"
+    assert viaje_con_solicitudes.getter_solicitudes() == [solicitud_b, solicitud_a]
+    assert viaje_con_solicitudes.paradas_pendientes() == [parada_1, parada_2]
+    assert viaje_con_solicitudes.getter_paradas() == [parada_1, parada_2]    # Se vacían las paradas resueltas
+    assert viaje_con_solicitudes.es_parada_actual(parada_1)
+# Estado inválido se propaga
+def test_comenzar_estadoInvalido_sePropaga(viaje_con_solicitudes, solicitud_a, solicitud_b, parada_1, mock_validar_estado):
+    mock_validar_estado.side_effect = EstadoInvalidoError("iniciar_viaje", "EN_CURSO")
+    with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede iniciar_viaje porque el estado es EN_CURSO"):
+        viaje_con_solicitudes.comenzar([solicitud_b], [parada_1])
+    assert viaje_con_solicitudes.getter_estado() == "PLANIFICADO"
+    assert viaje_con_solicitudes.getter_solicitudes() == [solicitud_a, solicitud_b]
+    assert viaje_con_solicitudes.getter_paradas() == []
+
+
+# ---------- parada_actual ----------
+# Funcionamiento normal
+def test_paradaActual_ok(viaje_en_curso, parada_1, parada_2):
+    assert viaje_en_curso.parada_actual("registrar_entrega") is parada_1
+    # No saca la parada de la cola
+    assert viaje_en_curso.parada_actual("registrar_entrega") is parada_1
+    assert viaje_en_curso.paradas_pendientes() == [parada_1, parada_2]
+# Estado inválido
+def test_paradaActual_estadoInvalido(viaje):
+    with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede registrar_entrega porque el estado es PLANIFICADO"):
+        viaje.parada_actual("registrar_entrega")
+# Sin paradas pendientes
+def test_paradaActual_sinParadasPendientes(viaje):
+    viaje.setter_estado("EN_CURSO")
+    with pytest.raises(SinParadasPendientesError, match = "Sin paradas pendientes: No se puede registrar_incidente"):
+        viaje.parada_actual("registrar_incidente")
+
+
+# ---------- validar_hora_resolucion ----------
+# Funcionamiento normal
+def test_validarHoraResolucion_sinParadasResueltas(viaje, mock_validaciones):
+    assert viaje.validar_hora_resolucion(hora(9, 35), "fecha de entrega") is None
+    mock_validaciones.validar_ventana.assert_called_once_with(HORARIO, hora(9, 35), nombre_inicio = "fecha de salida del viaje", nombre_fin = "fecha de entrega")
+def test_validarHoraResolucion_conParadaPrevia(viaje_en_curso, mock_validaciones, parada_1):
+    parada_1.getter_hora_real.return_value = hora(9, 35)
+    viaje_en_curso.cerrar_parada_actual()
+    assert viaje_en_curso.validar_hora_resolucion(hora(10, 40), "fecha del incidente") is None
+    mock_validaciones.validar_ventana.assert_called_once_with(hora(9, 35), hora(10, 40), nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha del incidente")
+# Ventana inválida se propaga
+def test_validarHoraResolucion_anteriorALaSalida_sePropaga(viaje, mock_validaciones):
+    mock_validaciones.validar_ventana.side_effect = VentanaInvalidaError(HORARIO, hora(8), "fecha de salida del viaje", "fecha de entrega")
+    with pytest.raises(VentanaInvalidaError, match = re.escape("La fecha de salida del viaje (2026-10-11 09:00:00) debe ser anterior a la fecha de entrega (2026-10-11 08:00:00)")):
+        viaje.validar_hora_resolucion(hora(8), "fecha de entrega")
+def test_validarHoraResolucion_anteriorALaParadaPrevia_sePropaga(viaje_en_curso, mock_validaciones, parada_1):
+    parada_1.getter_hora_real.return_value = hora(9, 35)
+    viaje_en_curso.cerrar_parada_actual()
+    mock_validaciones.validar_ventana.side_effect = VentanaInvalidaError(hora(9, 35), hora(9, 20), "fecha de la parada previa", "fecha del incidente")
+    with pytest.raises(VentanaInvalidaError, match = re.escape("La fecha de la parada previa (2026-10-11 09:35:00) debe ser anterior a la fecha del incidente (2026-10-11 09:20:00)")):
+        viaje_en_curso.validar_hora_resolucion(hora(9, 20), "fecha del incidente")
+
+
+# ---------- cerrar_parada_actual ----------
+# Quedan paradas pendientes
+def test_cerrarParadaActual_ok(viaje_en_curso, parada_1, parada_2):
+    assert viaje_en_curso.cerrar_parada_actual() is None
+    assert viaje_en_curso.getter_estado() == "EN_CURSO"
+    assert viaje_en_curso.paradas_pendientes() == [parada_2]
+    assert viaje_en_curso.getter_paradas() == [parada_1, parada_2]
+# Última parada: el viaje finaliza
+def test_cerrarParadaActual_ultimaParada_finalizaElViaje(viaje_en_curso, parada_1, parada_2):
+    viaje_en_curso.cerrar_parada_actual()
+    viaje_en_curso.cerrar_parada_actual()
+    assert viaje_en_curso.getter_estado() == "FINALIZADO"
+    assert viaje_en_curso.paradas_pendientes() == []
+    assert viaje_en_curso.getter_paradas() == [parada_1, parada_2]
+
+
+# ---------- Setters ----------
+def test_viaje_setterId(viaje):
+    viaje.setter_id(7)
+    assert viaje.getter_id() == 7
+def test_viaje_setterEstado_ok(viaje, mock_validaciones):
+    for estado in ("EN_CURSO", "FINALIZADO", "PLANIFICADO"):
+        viaje.setter_estado(estado)
+        assert viaje.getter_estado() == estado
+        mock_validaciones.validar_en.assert_any_call(estado, opciones = ("PLANIFICADO", "EN_CURSO", "FINALIZADO"), nombre = "estado")
+# Estado inválido se propaga
+def test_viaje_setterEstado_invalido_sePropaga(viaje, mock_validaciones):
+    mock_validaciones.validar_en.side_effect = DatoInvalidoError("El estado CANCELADO debe ser uno de: PLANIFICADO, EN_CURSO, FINALIZADO")
+    with pytest.raises(DatoInvalidoError, match = "El estado CANCELADO debe ser uno de"):
+        viaje.setter_estado("CANCELADO")
+    assert viaje.getter_estado() == "PLANIFICADO"
+# Los setters de listas guardan una copia
+def test_viaje_setters_guardanUnaCopia(viaje, solicitud_a, solicitud_b, incidente, parada_1):
+    solicitudes = [solicitud_a, solicitud_b]
+    viaje.setter_solicitudes(solicitudes)
+    solicitudes.clear()
+    assert viaje.getter_solicitudes() == [solicitud_a, solicitud_b]
+    incidentes = [incidente]
+    viaje.setter_incidentes(incidentes)
+    incidentes.clear()
+    assert viaje.getter_incidentes() == [incidente]
+    resueltas = [parada_1]
+    viaje.setter_paradas_resueltas(resueltas)
+    resueltas.clear()
+    assert viaje.getter_paradas() == [parada_1]
+# La cola respeta el orden y reemplaza a la anterior
+def test_viaje_setterParadas_respetaElOrden(viaje, parada_1, parada_2):
+    viaje.setter_paradas([parada_1, parada_2])
+    assert viaje.paradas_pendientes() == [parada_1, parada_2]
+    viaje.setter_paradas([parada_2])
+    assert viaje.paradas_pendientes() == [parada_2]
+    viaje.setter_paradas([])
+    assert viaje.paradas_pendientes() == []
+# La pila: la última solicitud recibida es la primera en deshacerse
+def test_viaje_setterHistorialSolicitudes_ultimaEnSalirPrimero(viaje, solicitud_a, solicitud_b):
+    viaje.setter_solicitudes([solicitud_a, solicitud_b])
+    viaje.setter_historial_solicitudes([solicitud_a, solicitud_b])
+    assert viaje.deshacer_ultima_solicitud() is solicitud_b
+    assert viaje.deshacer_ultima_solicitud() is solicitud_a
+    assert viaje.getter_solicitudes() == []
+
+
+# ---------- deserializar ----------
+ENCABEZADO = ["id", "id_transporte", "deposito", "horario", "estado", "solicitudes", "incidentes", "paradas", "paradas_resueltas", "historial_solicitudes", "Viaje"]
+@pytest.fixture
+def contexto(matriz, transporte, solicitud_a, solicitud_b, incidente, parada_1, parada_2):
+    transporte.getter_id.return_value = 4
+    incidente.getter_id.return_value = 7
+    parada_1.getter_id.return_value = 10
+    parada_2.getter_id.return_value = 11
+    return {MatrizDistancia: matriz, Transporte: [transporte], Solicitud: [solicitud_a, solicitud_b],
+            Incidente: [incidente], Parada: [parada_1, parada_2]}
+# Viaje en curso: con una parada resuelta y otra pendiente
+def test_viaje_deserializar_enCurso(mock_validaciones, contexto, matriz, transporte, solicitud_a, solicitud_b, incidente, parada_1, parada_2):
+    archivo = [ENCABEZADO, ["3", "4", "Deposito", "2026-10-11 09:00:00", "EN_CURSO", "1,2", "7", "11", "10", "1,2"]]
+    viajes = Viaje.deserializar(archivo, contexto)
+    assert len(viajes) == 1
+    viaje = viajes[0]
+    assert viaje.getter_id() == 3
+    assert viaje.getter_transporte() is transporte
+    assert viaje.getter_deposito() == "Deposito"
+    assert viaje.getter_horario() == HORARIO
+    assert viaje.getter_matriz() is matriz
+    assert viaje.getter_estado() == "EN_CURSO"
+    assert viaje.getter_solicitudes() == [solicitud_a, solicitud_b]
+    assert viaje.getter_incidentes() == [incidente]
+    assert viaje.paradas_pendientes() == [parada_2]
+    assert viaje.getter_paradas() == [parada_1, parada_2]
+    assert viaje.es_parada_actual(parada_2)
+    # Las solicitudes quedan asociadas al viaje
+    solicitud_a.setter_viaje.assert_called_once_with(viaje)
+    solicitud_b.setter_viaje.assert_called_once_with(viaje)
+    # El próximo id continúa desde el mayor
+    assert Viaje.curr_id == 3
+# Viaje planificado: el historial permite deshacer en orden inverso
+def test_viaje_deserializar_planificado(mock_validaciones, contexto, solicitud_a, solicitud_b):
+    archivo = [ENCABEZADO, ["1", "4", "Deposito", "2026-10-11 09:00:00", "PLANIFICADO", "1,2", "", "", "", "1,2"]]
+    viaje = Viaje.deserializar(archivo, contexto)[0]
+    assert viaje.getter_estado() == "PLANIFICADO"
+    assert viaje.getter_incidentes() == []
+    assert viaje.getter_paradas() == []
+    assert viaje.deshacer_ultima_solicitud() is solicitud_b
+    assert viaje.deshacer_ultima_solicitud() is solicitud_a
+    assert viaje.getter_solicitudes() == []
+# Varios viajes y filas vacías
+def test_viaje_deserializar_variosViajes(mock_validaciones, contexto, solicitud_a, solicitud_b):
+    archivo = [ENCABEZADO,
+               ["1", "4", "Deposito", "2026-10-11 09:00:00", "PLANIFICADO", "1", "", "", "", "1"],
+               [],
+               ["2", "4", "Deposito", "2026-10-12 08:00:00", "PLANIFICADO", "", "", "", "", ""]]
+    viajes = Viaje.deserializar(archivo, contexto)
+    assert list(map(lambda v: v.getter_id(), viajes)) == [1, 2]
+    assert viajes[0].getter_solicitudes() == [solicitud_a]
+    assert viajes[1].getter_solicitudes() == []
+    assert viajes[1].getter_horario() == datetime(2026, 10, 12, 8, 0)
+    assert Viaje.curr_id == 2
+# Sin filas
+def test_viaje_deserializar_soloEncabezado(mock_validaciones, contexto):
+    assert Viaje.deserializar([ENCABEZADO], contexto) == []
+    assert Viaje.curr_id == 0
+# Los incidentes y las paradas son opcionales en el contexto (todavía no se cargaron)
+def test_viaje_deserializar_sinIncidentesNiParadas(mock_validaciones, matriz, transporte, solicitud_a):
+    transporte.getter_id.return_value = 4
+    contexto = {MatrizDistancia: matriz, Transporte: [transporte], Solicitud: [solicitud_a]}
+    archivo = [ENCABEZADO, ["1", "4", "Deposito", "2026-10-11 09:00:00", "PLANIFICADO", "1", "", "", "", "1"]]
+    assert len(Viaje.deserializar(archivo, contexto)) == 1
+# Transporte inexistente
+def test_viaje_deserializar_transporteInexistente(mock_validaciones, contexto):
+    with pytest.raises(KeyError):
+        Viaje.deserializar([ENCABEZADO, ["1", "99", "Deposito", "2026-10-11 09:00:00", "PLANIFICADO", "", "", "", "", ""]], contexto)
+# Lo serializado se puede volver a cargar
+def test_viaje_serializar_deserializar(viaje_con_solicitudes, contexto, transporte, solicitud_a, solicitud_b):
+    fila = list(map(str, viaje_con_solicitudes.serializar()))
+    copia = Viaje.deserializar([ENCABEZADO, fila], contexto)[0]
+    assert copia.getter_id() == viaje_con_solicitudes.getter_id()
+    assert copia.getter_transporte() is transporte
+    assert copia.getter_deposito() == viaje_con_solicitudes.getter_deposito()
+    assert copia.getter_horario() == viaje_con_solicitudes.getter_horario()
+    assert copia.getter_estado() == viaje_con_solicitudes.getter_estado()
+    assert copia.getter_solicitudes() == [solicitud_a, solicitud_b]
+    # El historial conserva el orden
+    assert copia.deshacer_ultima_solicitud() is solicitud_b
