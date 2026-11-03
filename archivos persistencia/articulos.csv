@@ -27,3 +27,6 @@ id,descripcion,peso,volumen,Articulo
 29,Caja,1.0,0.8
 31,Art 1,1.0,0.5
 32,Art 2,1.0,0.4
+33,Caja,2.0,0.5
+34,Libro,1.0,0.1
+35,Taza,1.0,0.1

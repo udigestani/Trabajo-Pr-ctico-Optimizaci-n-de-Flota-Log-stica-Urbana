@@ -4,3 +4,6 @@ id,tipo,fecha,descripcion,clase_afectado,id_afectado,detalles,Incidente
 3,AUSENTE,2027-03-01 12:00:00,nadie,Solicitud,4,
 4,AUSENTE,2026-10-22 10:00:00,Cliente ausente,Solicitud,10,
 5,DAÑO,2026-10-30 11:00:00,Art roto,Solicitud,26,
+6,DAÑO,2026-10-24 09:30:00,No estaba,Solicitud,23,
+7,DAÑO,2026-10-24 09:40:00,Golpe,Solicitud,17,
+8,RETRASO,2026-10-24 10:00:00,Pinchazo,Furgoneta,8,

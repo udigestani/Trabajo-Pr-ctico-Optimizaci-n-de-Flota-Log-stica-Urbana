@@ -61,7 +61,7 @@ class Validaciones:
             raise DatoInvalidoError(f"El {nombre} {valor} debe ser positivo")
         if len(str(valor)) in cantidades:
             return valor
-        opciones = " o ".join(str(c) for c in cantidades)
+        opciones = " o ".join(map(str, cantidades))
         raise DatoInvalidoError(f"El {nombre} {valor} debe tener {opciones} dígitos")
 
     @staticmethod
@@ -77,7 +77,7 @@ class Validaciones:
     def validar_en(*valores, opciones, nombre = "valor"):
         Validaciones._resultado(valores)
         if isinstance(opciones, str):
-            opciones = tuple(opcion.strip() for opcion in opciones.split(","))
+            opciones = tuple(map(lambda opcion: opcion.strip(), opciones.split(",")))
         for opcion in opciones:
             if not isinstance(opcion, str):
                 raise TypeError(f"Las opciones de {nombre} deben ser cadenas str, pero {opcion} no lo es")
@@ -85,7 +85,7 @@ class Validaciones:
             if not isinstance(valor, str):
                 raise TypeError(f"El {nombre} {valor} debe ser una cadena str")
             if valor not in opciones:
-                raise DatoInvalidoError(f"El {nombre} {valor} debe ser uno de: {', '.join(str(opcion) for opcion in opciones)}")
+                raise DatoInvalidoError(f"El {nombre} {valor} debe ser uno de: {', '.join(map(str, opciones))}")
         return Validaciones._resultado(valores)
 
     @staticmethod

@@ -58,14 +58,13 @@ class Parada:
                 if fila[4]:
                     hora_real = datetime.fromisoformat(fila[4])
                 parada = cls(int(fila[1]), dicc_solicitudes[int(fila[2])], datetime.fromisoformat(fila[3]), hora_real)
-                parada.id = int(fila[0])
+                parada.setter_id(int(fila[0]))
                 if fila[6]:
-                    parada.comprobante = dicc_comprobantes[int(fila[6])]
+                    parada.setter_comprobante(dicc_comprobantes[int(fila[6])])
                 if fila[5] != "PENDIENTE":
-                    estado = Validaciones.validar_en(fila[5], opciones = "FALLIDA, ENTREGADA", nombre = "estado")
-                    parada.estado = estado
+                    parada.restaurar_estado(fila[5])
                 paradas.append(parada)
-        cls.curr_id = max(cls.curr_id, 0, *map(lambda p: p.id, paradas))
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda p: p.getter_id(), paradas))
         return paradas
 
     def __str__(self):
@@ -105,3 +104,9 @@ class Parada:
         return self.comprobante
     def getter_id(self):
         return self.id
+    def setter_id(self, id):
+        self.id = id
+    def setter_comprobante(self, comprobante):
+        self.comprobante = comprobante
+    def restaurar_estado(self, estado):
+        self.estado = Validaciones.validar_en(estado, opciones = "FALLIDA, ENTREGADA", nombre = "estado")

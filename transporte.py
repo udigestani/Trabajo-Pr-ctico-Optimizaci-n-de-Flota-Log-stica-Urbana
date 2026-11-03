@@ -27,6 +27,8 @@ class Transporte:
     
     def getter_id(self):
         return self.id
+    def setter_id(self, id):
+        self.id = id
     
     def getter_peso_max(self):
         return self.peso_max
@@ -56,16 +58,16 @@ class Transporte:
         for fila in archivo[1:]:
             if fila and fila[0] == "Transporte":
                 transporte = Transporte(*map(float, fila[2:8]))
-                transporte.id = int(fila[1])
+                transporte.setter_id(int(fila[1]))
                 transportes.append(transporte)
             elif fila and fila[0] in clases:
                 clase = clases[fila[0]]
                 transporte = clase()
-                transporte.id = int(fila[1])
+                transporte.setter_id(int(fila[1]))
                 transportes.append(transporte)
             elif fila:
                 raise DatoInvalidoError(f"Tipo de transporte desconocido: {fila[0]}")
-        Transporte.curr_id = max(Transporte.curr_id, 0, *map(lambda t: t.id, transportes))
+        Transporte.curr_id = max(Transporte.curr_id, 0, *map(lambda t: t.getter_id(), transportes))
         return transportes
 
     def __str__(self):

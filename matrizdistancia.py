@@ -4,6 +4,7 @@ from validaciones import Validaciones
 class MatrizDistancia:
     def __init__(self):
         self.distancias = {}
+        self.lugares = set()
 
     def agregar_distancia(self, id_origen, id_destino, km):
         id_origen, id_destino = Validaciones.validar_str(id_origen, id_destino, nombre = "ubicación")
@@ -12,6 +13,8 @@ class MatrizDistancia:
             raise DatoInvalidoError(f"La distancia entre {id_origen} y si mismo debe ser 0")
         else:
             self.distancias[(id_origen, id_destino)] = km
+            self.lugares.add(id_origen)
+            self.lugares.add(id_destino)
 
     def cargar_matriz(self, lista_tramos):
         for id_origen, id_destino, km in lista_tramos:
@@ -28,11 +31,18 @@ class MatrizDistancia:
     def getter_distancias(self):
         return self.distancias.copy()
 
+    def getter_lugares(self):
+        return self.lugares.copy()
+
+    def alcanzables(self, lugar):
+        destinos = filter(lambda tramo: tramo[0] == lugar, self.distancias.keys())
+        return list(map(lambda tramo: tramo[1], destinos))
+
+    def lugar_conocido(self, lugar):
+        return lugar in self.lugares
+
     def serializar(self):
-        lista = []
-        for (origen, destino), km in self.distancias.items():
-            lista.append([origen, destino, km])
-        return lista
+        return list(map(lambda tramo: [tramo[0][0], tramo[0][1], tramo[1]], self.distancias.items()))
 
     @classmethod
     def deserializar(cls, archivo, contexto = None):

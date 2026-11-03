@@ -37,3 +37,6 @@ Olivos,Deposito,9.0
 Deposito,Olivos,10.0
 Olivos,Palermo,5.0
 Palermo,Olivos,5.0
+Deposito,Villa Crespo,5.0
+Villa Crespo,Deposito,5.0
+Almagro,Villa Crespo,3.0

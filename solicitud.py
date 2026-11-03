@@ -38,9 +38,9 @@ class Solicitud:
                     raise DatoInvalidoError("La solicitud debe tener al menos un artículo")
                 articulos = map(lambda id: dicc_articulos[int(id)], fila[4].split(","))
                 solicitud = cls(fila[1], datetime.fromisoformat(fila[2]), datetime.fromisoformat(fila[3]), *articulos)
-                solicitud.id = int(fila[0])
+                solicitud.setter_id(int(fila[0]))
                 solicitudes.append(solicitud)
-        cls.curr_id = max(cls.curr_id, 0, *map(lambda s: s.id, solicitudes))
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda s: s.getter_id(), solicitudes))
         return solicitudes
 
     def __str__(self):
@@ -64,6 +64,8 @@ class Solicitud:
         return sum(map(lambda art: art.getter_volumen(), self.articulos))
     def getter_id(self):
         return self.id
+    def setter_id(self, id):
+        self.id = id
     def getter_destino(self):
         return self.destino
     def getter_ventana_inicio(self):
@@ -89,5 +91,7 @@ class Solicitud:
         return None
     def esta_entregada(self):
         return self.comprobante is not None
+    def esta_pendiente(self):
+        return not self.esta_asignada() and not self.esta_entregada()
     def esta_asignada(self):
         return self.viaje is not None and self.viaje.getter_estado() in {"EN_CURSO", "PLANIFICADO"}

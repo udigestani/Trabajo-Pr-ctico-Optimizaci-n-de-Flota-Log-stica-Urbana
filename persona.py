@@ -1,6 +1,9 @@
 from viaje import Viaje
+from parada import Parada
+from incidente import Incidente
+from politicaordenamiento import Vecinos, VentanasTiempo
 from validaciones import Validaciones
-from excepciones import DatoInvalidoError
+from excepciones import DatoInvalidoError, VentanaIncumplidaError, RutaIncompletaError, ViajeVacioError
 from arbol import Arbol
 
 class Persona:
@@ -61,6 +64,87 @@ class Administrador(Persona):
     def crear_viaje(self, transporte, deposito, horario, matriz):
         viaje = Viaje(transporte, deposito, horario, matriz)
         return viaje
+
+    @staticmethod
+    def crear_transporte(clase):
+        return clase()
+
+    @staticmethod
+    def agregar_distancia(matriz, origen, destino, km):
+        matriz.agregar_distancia(origen, destino, km)
+
+    @staticmethod
+    def asignar_solicitud(viaje, solicitud):
+        Validaciones.validar_instancia(viaje, clase = Viaje, nombre = "viaje")
+        viaje.agregar_solicitud(solicitud)
+
+    @staticmethod
+    def deshacer_ultima_solicitud(viaje):
+        Validaciones.validar_instancia(viaje, clase = Viaje, nombre = "viaje")
+        return viaje.deshacer_ultima_solicitud()
+
+    @staticmethod
+    def ordenar_solicitudes(viaje):
+        opciones = {}
+        error_solicitudes = None
+        solicitudes = viaje.getter_solicitudes()
+        deposito = viaje.getter_deposito()
+        matriz = viaje.getter_matriz()
+        try:
+            viaje.validar_recorrido(solicitudes)
+            opciones[tuple(solicitudes)] = viaje.costo_total(solicitudes)
+        except (VentanaIncumplidaError, RutaIncompletaError) as error:
+            error_solicitudes = error
+        for politica in (Vecinos, VentanasTiempo):
+            try:
+                orden = tuple(politica.sugerir_orden(deposito, solicitudes, matriz))
+                viaje.validar_recorrido(orden)
+                opciones[orden] = viaje.costo_total(orden)
+            except (VentanaIncumplidaError, RutaIncompletaError):
+                pass
+        if not opciones:
+            raise error_solicitudes
+        orden = min(opciones.keys(), key = lambda opcion: opciones[opcion])
+        return list(orden)
+
+    @staticmethod
+    def iniciar_viaje(viaje):
+        Validaciones.validar_instancia(viaje, clase = Viaje, nombre = "viaje")
+        viaje.validar_estado("iniciar_viaje", "PLANIFICADO")
+        if not viaje.getter_solicitudes():
+            raise ViajeVacioError("Viaje Vacio: El viaje aún no tiene solicitudes")
+        solicitudes = Administrador.ordenar_solicitudes(viaje)
+        horarios = viaje.calcular_horarios(solicitudes)
+        paradas = list(map(lambda orden, solicitud, hora: Parada(orden=orden, solicitud=solicitud, hora_prev=hora, hora_real=None), range(1, len(solicitudes) + 1), solicitudes, horarios))
+        viaje.comenzar(solicitudes, paradas)
+
+    @staticmethod
+    def registrar_entrega(viaje, hora_real, receptor, monto):
+        Validaciones.validar_instancia(viaje, clase = Viaje, nombre = "viaje")
+        parada = viaje.parada_actual("registrar_entrega")
+        viaje.validar_hora_resolucion(hora_real, "fecha de entrega")
+        comprobante = parada.generar_comprobante(receptor, hora_real, monto)
+        viaje.cerrar_parada_actual()
+        return comprobante
+
+    @staticmethod
+    def registrar_incidente(viaje, tipo, fecha, descripcion, alcance = "FALLA", **detalles):
+        Validaciones.validar_instancia(viaje, clase = Viaje, nombre = "viaje")
+        parada = viaje.parada_actual("registrar_incidente")
+        Validaciones.validar_en(alcance, opciones = ("FALLA", "SOLICITUD", "TRANSPORTE"), nombre = "alcance del incidente")
+        viaje.validar_hora_resolucion(fecha, "fecha del incidente")
+        if alcance == "TRANSPORTE":
+            afectado = viaje.getter_transporte()
+        else:
+            afectado = parada.getter_solicitud()
+        incidente = Incidente(tipo, fecha, descripcion, afectado, **detalles)
+        viaje.agregar_incidente(incidente)
+        if alcance == "FALLA":
+            parada.setter_estado("FALLIDA")
+            parada.setter_hora_real(fecha)
+            viaje.cerrar_parada_actual()
+        return incidente
+
     def __str__(self):
         return f"Administrador de nombre {self.nombre} y DNI: {self.dni}"
 

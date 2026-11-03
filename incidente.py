@@ -28,6 +28,8 @@ class Incidente:
         return self.detalles.copy()
     def getter_id(self):
         return self.id
+    def setter_id(self, id):
+        self.id = id
     def getter_fecha(self):
         return self.fecha
     def getter_descripcion(self):
@@ -52,9 +54,9 @@ class Incidente:
                 if fila[6]:
                     detalles = dict(map(lambda x: x.split("="), fila[6].split(",")))
                 incidente = Incidente(fila[1], datetime.fromisoformat(fila[2]), fila[3], afectado, **detalles)
-                incidente.id = int(fila[0])
+                incidente.setter_id(int(fila[0]))
                 incidentes.append(incidente)
-        cls.curr_id = max(cls.curr_id, 0, *map(lambda inc: inc.id, incidentes))
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda inc: inc.getter_id(), incidentes))
         return incidentes
 
     def __str__(self):

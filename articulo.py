@@ -15,6 +15,8 @@ class Articulo:
         return self.volumen
     def getter_id(self):
         return self.id
+    def setter_id(self, id):
+        self.id = id
     def getter_descripcion(self):
         return self.descripcion
 
@@ -27,9 +29,9 @@ class Articulo:
         for fila in archivo[1:]:
             if fila:
                 articulo = cls(fila[1], float(fila[2]), float(fila[3]))
-                articulo.id = int(fila[0])
+                articulo.setter_id(int(fila[0]))
                 articulos.append(articulo)
-        cls.curr_id = max(cls.curr_id, 0, *map(lambda art: art.id, articulos))
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda art: art.getter_id(), articulos))
         return articulos
 
     def __str__(self):

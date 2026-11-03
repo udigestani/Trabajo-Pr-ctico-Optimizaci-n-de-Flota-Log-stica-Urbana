@@ -5,10 +5,9 @@ from solicitud import Solicitud
 from parada import Parada
 from cola import Cola
 from pila import Pila
-from politicaordenamiento import Vecinos, VentanasTiempo
 from validaciones import Validaciones
 from matrizdistancia import MatrizDistancia
-from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, RutaIncompletaError, TransicionIlegalError
+from excepciones import DatoInvalidoError, ExcesoPesoError, ExcesoVolumenError, EstadoInvalidoError, VentanaIncumplidaError, ViajeVacioError, SinParadasPendientesError, ViajeIncompletoError, SolicitudDuplicadaError, TransicionIlegalError
 
 class Viaje:
     curr_id = 0
@@ -27,24 +26,23 @@ class Viaje:
         Viaje.curr_id += 1
         self.id = Viaje.curr_id
 
-    def _validar_estado(self, accion, estado_requerido):
+    def validar_estado(self, accion, estado_requerido):
         if self.estado != estado_requerido:
             raise EstadoInvalidoError(accion, self.estado)
 
     def crear_solicitud(self, destino, ventana_inicio, ventana_fin, *articulos):
-        self._validar_estado("crear_solicitud", "PLANIFICADO")
+        self.validar_estado("crear_solicitud", "PLANIFICADO")
         nueva_solicitud = Solicitud(destino, ventana_inicio, ventana_fin, *articulos)
         self.agregar_solicitud(nueva_solicitud)
         return nueva_solicitud
 
-    def validar_recorrido(self, recorrido, indice = 0, horario = None, ubicacion = None):
+    def calcular_horarios(self, recorrido, indice = 0, horario = None, ubicacion = None):
         if horario is None:
             horario = self.horario
         if ubicacion is None:
             ubicacion = self.deposito
         if indice == len(recorrido):
-            self.matriz.obtener_distancia(ubicacion, self.deposito)
-            return True
+            return []
         solicitud = recorrido[indice]
         lugar = solicitud.getter_destino()
         distancia = self.matriz.obtener_distancia(ubicacion, lugar)
@@ -54,7 +52,15 @@ class Viaje:
             raise VentanaIncumplidaError(lugar, llegada, solicitud.getter_ventana_fin())
         if llegada < solicitud.getter_ventana_inicio():
             llegada = solicitud.getter_ventana_inicio()
-        return self.validar_recorrido(recorrido, indice = indice + 1, horario = llegada + timedelta(minutes=10), ubicacion = lugar)
+        return [llegada] + self.calcular_horarios(recorrido, indice = indice + 1, horario = llegada + timedelta(minutes=10), ubicacion = lugar)
+
+    def validar_recorrido(self, recorrido):
+        self.calcular_horarios(recorrido)
+        ultimo_lugar = self.deposito
+        if recorrido:
+            ultimo_lugar = recorrido[-1].getter_destino()
+        self.matriz.obtener_distancia(ultimo_lugar, self.deposito)
+        return True
 
     def distancia_total(self, ubicacion = None, restantes = None):
         if ubicacion is None:
@@ -76,6 +82,14 @@ class Viaje:
 
     def impacto_ambiental(self):
         return self.transporte.calcular_impacto_ambiental(self.distancia_total(self.deposito, self.solicitudes), self.getter_peso())
+    def ultimo_lugar(self):
+        if self.solicitudes:
+            return self.solicitudes[-1].getter_destino()
+        return self.deposito
+    def getter_horario(self):
+        return self.horario
+    def getter_matriz(self):
+        return self.matriz
     def getter_estado(self):
         return self.estado
     def getter_peso(self):
@@ -90,6 +104,24 @@ class Viaje:
         return self.solicitudes.copy()
     def getter_id(self):
         return self.id
+    def setter_id(self, id):
+        self.id = id
+    def setter_estado(self, estado):
+        self.estado = Validaciones.validar_en(estado, opciones = ("PLANIFICADO", "EN_CURSO", "FINALIZADO"), nombre = "estado")
+    def setter_solicitudes(self, solicitudes):
+        self.solicitudes = list(solicitudes)
+    def setter_incidentes(self, incidentes):
+        self.incidentes = list(incidentes)
+    def setter_paradas(self, paradas):
+        self.paradas = Cola()
+        for parada in paradas:
+            self.paradas.encolar(parada)
+    def setter_paradas_resueltas(self, paradas):
+        self.paradas_resueltas = list(paradas)
+    def setter_historial_solicitudes(self, solicitudes):
+        self.historial_solicitudes = Pila()
+        for solicitud in solicitudes:
+            self.historial_solicitudes.apilar(solicitud)
     def getter_deposito(self):
         return self.deposito
     def getter_transporte(self):
@@ -118,24 +150,22 @@ class Viaje:
             if fila:
                 ids = list(map(lambda celda: list(map(int, filter(None, celda.split(",")))), fila[5:10]))
                 viaje = cls(transportes[int(fila[1])], fila[2], datetime.fromisoformat(fila[3]), matriz)
-                viaje.id = int(fila[0])
-                viaje.estado = fila[4]
-                viaje.solicitudes = list(map(lambda i: solicitudes[i], ids[0]))
-                for solicitud in viaje.solicitudes:
+                viaje.setter_id(int(fila[0]))
+                viaje.setter_estado(fila[4])
+                viaje.setter_solicitudes(map(lambda i: solicitudes[i], ids[0]))
+                for solicitud in viaje.getter_solicitudes():
                     solicitud.setter_viaje(viaje)
-                viaje.incidentes = list(map(lambda i: incidentes[i], ids[1]))
-                for i in ids[2]:
-                    viaje.paradas.encolar(paradas[i])
-                viaje.paradas_resueltas = list(map(lambda i: paradas[i], ids[3]))
-                for i in ids[4]:
-                    viaje.historial_solicitudes.apilar(solicitudes[i])
+                viaje.setter_incidentes(map(lambda i: incidentes[i], ids[1]))
+                viaje.setter_paradas(map(lambda i: paradas[i], ids[2]))
+                viaje.setter_paradas_resueltas(map(lambda i: paradas[i], ids[3]))
+                viaje.setter_historial_solicitudes(map(lambda i: solicitudes[i], ids[4]))
                 viajes.append(viaje)
-        cls.curr_id = max(cls.curr_id, 0, *map(lambda v: v.id, viajes))
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda v: v.getter_id(), viajes))
         return viajes
 
     def agregar_solicitud(self, nueva_solicitud):
         Validaciones.validar_instancia(nueva_solicitud, clase = Solicitud, nombre = "solicitud")
-        self._validar_estado("agregar_solicitud", "PLANIFICADO")
+        self.validar_estado("agregar_solicitud", "PLANIFICADO")
         if nueva_solicitud in self.solicitudes or nueva_solicitud.esta_asignada() or nueva_solicitud.esta_entregada():
             raise SolicitudDuplicadaError(nueva_solicitud.getter_id())
         if nueva_solicitud.getter_destino() == self.deposito:
@@ -153,7 +183,7 @@ class Viaje:
         return None
 
     def deshacer_ultima_solicitud(self):
-        self._validar_estado("deshacer_ultima_solicitud", "PLANIFICADO")
+        self.validar_estado("deshacer_ultima_solicitud", "PLANIFICADO")
         if self.historial_solicitudes.esVacia():
             raise ViajeVacioError("Viaje Vacio: No hay solicitudes para deshacer")
         solicitud = self.historial_solicitudes.desapilar()
@@ -174,101 +204,37 @@ class Viaje:
     def __hash__(self):
         return hash(self.id)
 
-    def ordenar_solicitudes(self):
-        opciones = {}
-        error_solicitudes = None
-        try:
-            self.validar_recorrido(self.solicitudes)
-            opciones[tuple(self.solicitudes)] = self.costo_total(self.solicitudes)
-        except (VentanaIncumplidaError, RutaIncompletaError) as error:
-            error_solicitudes = error
-        try:
-            orden = tuple(Vecinos.sugerir_orden(self.deposito, self.solicitudes, self.matriz))
-            self.validar_recorrido(orden)
-            costo = self.costo_total(orden)
-            opciones[orden] = costo
-        except (VentanaIncumplidaError, RutaIncompletaError):
-            pass
-        try:
-            orden = tuple(VentanasTiempo.sugerir_orden(self.deposito, self.solicitudes, self.matriz))
-            self.validar_recorrido(orden)
-            costo = self.costo_total(orden)
-            opciones[orden] = costo
-        except (VentanaIncumplidaError, RutaIncompletaError):
-            pass
-        if not opciones:
-            raise error_solicitudes
-        orden = min(opciones.keys(), key = lambda opcion: opciones[opcion])
-        return list(orden)
-
     # DESDE ACÁ EL VIAJE ESTÁ INICIADO
-    def iniciar_viaje(self):
-        self._validar_estado("iniciar_viaje", "PLANIFICADO")
-        if not self.solicitudes:
-            raise ViajeVacioError("Viaje Vacio: El viaje aún no tiene solicitudes")
-        self.solicitudes = self.ordenar_solicitudes()
-        self.paradas = Cola()
-        self.paradas_resueltas = []
-        horario = self.horario
-        ubicacion = self.deposito
-        for i in range(len(self.solicitudes)):
-            solicitud = self.solicitudes[i]
-            lugar = solicitud.getter_destino()
-            distancia = self.matriz.obtener_distancia(ubicacion, lugar)
-            tiempo_hrs = distancia / self.transporte.getter_velocidad()
-            horario += timedelta(hours=tiempo_hrs)
-            if horario < solicitud.getter_ventana_inicio():
-                horario = solicitud.getter_ventana_inicio()
-            nueva_parada = Parada(orden=i+1, solicitud=solicitud, hora_prev=horario, hora_real=None)
-            self.paradas.encolar(nueva_parada)
-            horario += timedelta(minutes=10)
-            ubicacion = lugar
-        self.estado = "EN_CURSO"
+    def comenzar(self, solicitudes, paradas):
+        self.validar_estado("iniciar_viaje", "PLANIFICADO")
+        self.setter_solicitudes(solicitudes)
+        self.setter_paradas(paradas)
+        self.setter_paradas_resueltas([])
+        self.setter_estado("EN_CURSO")
 
-    def registrar_entrega(self, hora_real, receptor, monto):
-        self._validar_estado("registrar_entrega", "EN_CURSO")
+    def parada_actual(self, accion):
+        self.validar_estado(accion, "EN_CURSO")
+        if self.paradas.esVacia():
+            raise SinParadasPendientesError(accion)
+        return self.paradas.frente()
+
+    def validar_hora_resolucion(self, hora, nombre_fin):
         if self.paradas_resueltas:
             inicio = self.paradas_resueltas[-1].getter_hora_real()
-            Validaciones.validar_ventana(inicio, hora_real, nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha de entrega")
+            Validaciones.validar_ventana(inicio, hora, nombre_inicio = "fecha de la parada previa", nombre_fin = nombre_fin)
         else:
-            Validaciones.validar_ventana(self.horario, hora_real, nombre_inicio = "fecha de salida del viaje", nombre_fin = "fecha de entrega")
-        if self.paradas.esVacia():
-            raise SinParadasPendientesError("registrar_entrega")
-        parada_pendiente = self.paradas.frente()
-        comprobante = parada_pendiente.generar_comprobante(receptor, hora_real, monto)
+            Validaciones.validar_ventana(self.horario, hora, nombre_inicio = "fecha de salida del viaje", nombre_fin = nombre_fin)
+
+    def cerrar_parada_actual(self):
         self.paradas_resueltas.append(self.paradas.desencolar())
         if self.paradas.esVacia():
             self.finalizar_viaje()
-        return comprobante
 
-    def registrar_incidente(self, tipo, fecha, descripcion, alcance = "FALLA", **detalles):
-        ALCANCES = ("FALLA", "SOLICITUD", "TRANSPORTE")
-        self._validar_estado("registrar_incidente", "EN_CURSO")
-        Validaciones.validar_en(alcance, opciones = ALCANCES, nombre = "alcance del incidente")
-        if self.paradas_resueltas:
-            inicio = self.paradas_resueltas[-1].getter_hora_real()
-            Validaciones.validar_ventana(inicio, fecha, nombre_inicio = "fecha de la parada previa", nombre_fin = "fecha del incidente")
-        else:
-            Validaciones.validar_ventana(self.horario, fecha, nombre_inicio = "fecha de salida del viaje", nombre_fin = "fecha del incidente")
-        if self.paradas.esVacia():
-            raise SinParadasPendientesError("registrar_incidente")
-        parada_pendiente = self.paradas.frente()
-        if alcance == "TRANSPORTE":
-            afectado = self.transporte
-        else:
-            afectado = parada_pendiente.getter_solicitud()
-        incidente = Incidente(tipo, fecha, descripcion, afectado, **detalles)
+    def agregar_incidente(self, incidente):
         self.incidentes.append(incidente)
-        if alcance == "FALLA":
-            parada_pendiente.setter_estado("FALLIDA")
-            parada_pendiente.setter_hora_real(fecha)
-            self.paradas_resueltas.append(self.paradas.desencolar())
-            if self.paradas.esVacia():
-                self.finalizar_viaje()
-        return incidente
 
     def finalizar_viaje(self):
-        self._validar_estado("finalizar_viaje", "EN_CURSO")
+        self.validar_estado("finalizar_viaje", "EN_CURSO")
         if not self.paradas.esVacia():
             raise ViajeIncompletoError(self.paradas.get_longitud())
         self.estado = "FINALIZADO"

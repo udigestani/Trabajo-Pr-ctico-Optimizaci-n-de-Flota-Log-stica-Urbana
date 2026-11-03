@@ -18,6 +18,8 @@ class Comprobante:
 
     def getter_id(self):
         return self.id
+    def setter_id(self, id):
+        self.id = id
     def getter_fecha_hora(self):
         return self.fecha_hora
     def getter_solicitud(self):
@@ -41,10 +43,10 @@ class Comprobante:
             if fila:
                 solicitud = dicc_solicitudes[int(fila[1])]
                 comprobante = cls(solicitud, datetime.fromisoformat(fila[2]), fila[3], float(fila[4]))
-                comprobante.id = int(fila[0])
+                comprobante.setter_id(int(fila[0]))
                 solicitud.setter_comprobante(comprobante)
                 comprobantes.append(comprobante)
-        cls.curr_id = max(cls.curr_id, 0, *map(lambda comp: comp.id, comprobantes))
+        cls.curr_id = max(cls.curr_id, 0, *map(lambda comp: comp.getter_id(), comprobantes))
         return comprobantes
 
     def __str__(self):
