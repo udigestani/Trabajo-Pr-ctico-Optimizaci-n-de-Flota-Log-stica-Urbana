@@ -137,8 +137,7 @@ def ver_registrados(personas):
 
 def buscar_persona():
     dni = pedir_entero("DNI de la persona a buscar: ")
-    registrados = Persona.getter_dnis_registrados()
-    persona, saltos = registrados.buscar_con_saltos(dni)
+    persona, saltos = Persona.buscar_persona(dni)
     if persona is None:
         print(f"No hay ninguna persona registrada con el DNI {dni}.")
         print(f"Saltos entre nodos hasta llegar a un lugar vacío: {saltos}")
@@ -210,7 +209,10 @@ def guardar_todos(contexto):
         datos = contexto[clase]
         if clase is MatrizDistancia:
             datos = datos.serializar()
+        elif clase is not Persona:
+            datos = list(map(lambda x: x.serializar(), datos))
         else:
+            datos = Persona.orden_arbol()
             datos = list(map(lambda x: x.serializar(), datos))
         GestorArchivos.escribir(linea1.split(","), datos, carpeta / ruta)
 
@@ -441,11 +443,11 @@ def menu_solicitante(solicitante, contexto):
     lista_articulos = contexto[Articulo]
 
     MENSAJE_SOLIC = f"MENU SOLICITANTE: {solicitante}"
-    MENSAJE_MENU_SOLIC = "\n1) Crear Solicitud\n2) Ver viajes\n3) Ver matriz\n4) Ver impacto ambiental\n5) Cerrar sesión"
-    OPCIONES_SOLIC = {"1": (crear_solicitud, solicitante, viajes, matriz, solicitudes, lista_articulos), "2": (ver_viajes, viajes),"3": (ver_matriz, matriz), "4": (ver_impacto_ambiental, viajes), "5": (cerrar_sesion, contexto)}
+    MENSAJE_MENU_SOLIC = "\n1) Crear Solicitud\n2) Ver viajes\n3) Ver impacto ambiental\n4) Cerrar sesión"
+    OPCIONES_SOLIC = {"1": (crear_solicitud, solicitante, viajes, matriz, solicitudes, lista_articulos), "2": (ver_viajes, viajes),"3": (ver_impacto_ambiental, viajes), "4": (cerrar_sesion, contexto)}
 
     print(MENSAJE_SOLIC)
-    correr_menu(MENSAJE_MENU_SOLIC, OPCIONES_SOLIC, "5")
+    correr_menu(MENSAJE_MENU_SOLIC, OPCIONES_SOLIC, "4")
 
 
 def main():

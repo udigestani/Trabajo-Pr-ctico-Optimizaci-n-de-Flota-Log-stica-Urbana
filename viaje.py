@@ -30,12 +30,6 @@ class Viaje:
         if self.estado != estado_requerido:
             raise EstadoInvalidoError(accion, self.estado)
 
-    def crear_solicitud(self, destino, ventana_inicio, ventana_fin, *articulos):
-        self.validar_estado("crear_solicitud", "PLANIFICADO")
-        nueva_solicitud = Solicitud(destino, ventana_inicio, ventana_fin, *articulos)
-        self.agregar_solicitud(nueva_solicitud)
-        return nueva_solicitud
-
     def calcular_horarios(self, recorrido, indice = 0, horario = None, ubicacion = None):
         if horario is None:
             horario = self.horario

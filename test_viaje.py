@@ -3,7 +3,6 @@ from datetime import datetime
 import re
 from viaje import Viaje
 from solicitud import Solicitud
-from articulo import Articulo
 from parada import Parada
 from cola import Cola
 from itertools import chain
@@ -62,10 +61,6 @@ def matriz(mocker):
     return mock
 
 @pytest.fixture
-def articulo(mocker):
-    return mocker.Mock(spec = Articulo)
-
-@pytest.fixture
 def solicitud_a(mocker):
     mock = mocker.Mock(spec = Solicitud)
     mock.getter_id.return_value = 1
@@ -107,12 +102,6 @@ def solicitud_c(mocker):
 @pytest.fixture
 def incidente(mocker):
     return mocker.Mock(spec = Incidente)
-
-@pytest.fixture
-def mock_solicitud_clase(mocker, solicitud_a):
-    mock = mocker.patch("viaje.Solicitud")
-    mock.return_value = solicitud_a
-    return mock
 
 @pytest.fixture
 def viaje(mock_validaciones, transporte, matriz):
@@ -441,35 +430,6 @@ def test_agregarSolicitud_recorridoInvalido_sePropaga(viaje, solicitud_a, solici
     assert viaje.getter_peso() == 150
     assert viaje.getter_volumen() == 3
     solicitud_b.setter_viaje.assert_not_called()
-
-
-# ---------- crear_solicitud ----------
-# Funcionamiento normal
-def test_crearSolicitud_ok(viaje, mock_validar_estado, mock_solicitud_clase, mock_agregar_solicitud, solicitud_a, articulo, mocker):
-    articulo2 = mocker.Mock(spec = Articulo)
-    resultado = viaje.crear_solicitud("Destino A", hora(9), hora(12), articulo, articulo2)
-    assert isinstance(resultado, Solicitud)
-    assert resultado is solicitud_a
-    mock_validar_estado.assert_called_once_with(viaje, "crear_solicitud", "PLANIFICADO")
-    mock_solicitud_clase.assert_called_once_with("Destino A", hora(9), hora(12), articulo, articulo2)
-    mock_agregar_solicitud.assert_called_once_with(viaje, solicitud_a)
-# Errores se propagan
-def test_crearSolicitud_estadoInvalido_sePropaga(viaje, mock_validar_estado, mock_solicitud_clase, mock_agregar_solicitud, articulo):
-    viaje.setter_estado("FINALIZADO")
-    mock_validar_estado.side_effect = EstadoInvalidoError("crear_solicitud", "FINALIZADO")
-    with pytest.raises(EstadoInvalidoError, match = "Estado invalido: No se puede crear_solicitud porque el estado es FINALIZADO"):
-        viaje.crear_solicitud("Destino A", hora(9), hora(12), articulo)
-    mock_solicitud_clase.assert_not_called()
-    mock_agregar_solicitud.assert_not_called()
-def test_crearSolicitud_solicitudInvalida_sePropaga(viaje, mock_validar_estado, mock_solicitud_clase, mock_agregar_solicitud, articulo):
-    mock_solicitud_clase.side_effect = DatoInvalidoError("El destino no debe estar vacío")
-    with pytest.raises(DatoInvalidoError, match = "El destino no debe estar vacío"):
-        viaje.crear_solicitud("   ", hora(9), hora(12), articulo)
-    mock_agregar_solicitud.assert_not_called()
-def test_crearSolicitud_agregarRechaza_sePropaga(viaje, mock_validar_estado, mock_solicitud_clase, mock_agregar_solicitud, articulo):
-    mock_agregar_solicitud.side_effect = ExcesoPesoError(500, 600)
-    with pytest.raises(ExcesoPesoError, match = "Capacidad excedida: El peso 600 supera el peso máximo del transporte 500"):
-        viaje.crear_solicitud("Destino A", hora(9), hora(12), articulo)
 
 
 # ---------- deshacer_ultima_solicitud ----------

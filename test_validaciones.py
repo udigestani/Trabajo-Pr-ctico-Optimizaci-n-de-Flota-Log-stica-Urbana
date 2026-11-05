@@ -295,7 +295,7 @@ def test_dni_ok(mock_digitos, dnis_registrados):
     mock_digitos.assert_any_call(44445555, (7, 8), "DNI")
     mock_digitos.assert_any_call(67676767, (7, 8), "DNI")
     # no modifica el árbol
-    assert dnis_registrados.inorden(dnis_registrados.getter_raiz()) == [11111111, 22222222]
+    assert list(map(lambda par: par[0], dnis_registrados.inorden(dnis_registrados.getter_raiz()))) == [11111111, 22222222]
 # Errores
 def test_dni_duplicado(mock_digitos, dnis_registrados):
     # Captura dni invalido

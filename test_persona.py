@@ -9,7 +9,7 @@ def limpiar_dnis():
 # DNIs que hay en el árbol, ordenados
 def dnis_registrados():
     arbol = Persona.getter_dnis_registrados()
-    return arbol.inorden(arbol.getter_raiz())
+    return list(map(lambda par: par[0], arbol.inorden(arbol.getter_raiz())))
 
 # Mock de Validaciones --> Asumimos que funciona y devuelve el valor
 @pytest.fixture
@@ -147,6 +147,121 @@ def test_persona_telefonoInvalido(mock_validaciones):
     with pytest.raises(DatoInvalidoError, match = "El teléfono 1234 debe ser"):
         Persona("Manuel", 12345678, 1234)
     assert dnis_registrados() == []
+
+
+# ---------- buscar_persona ----------
+# Árbol con 20000000 en la raíz, 10000000 a la izquierda y 30000000 a la derecha
+@pytest.fixture
+def personas_buscables(mock_validaciones):
+    raiz = Persona("Raiz", 20000000, 1123456789)
+    izquierda = Persona("Izquierda", 10000000, 1123456789)
+    derecha = Persona("Derecha", 30000000, 1123456789)
+    return raiz, izquierda, derecha
+
+# Funcionamiento normal: devuelve la persona y los saltos desde la raíz
+def test_buscarPersona_ok(personas_buscables):
+    raiz, izquierda, derecha = personas_buscables
+    assert Persona.buscar_persona(20000000) == (raiz, 0)
+    assert Persona.buscar_persona(10000000) == (izquierda, 1)
+    assert Persona.buscar_persona(30000000) == (derecha, 1)
+    persona, saltos = Persona.buscar_persona(30000000)
+    assert persona is derecha
+# Si no existe devuelve None y los saltos hasta llegar a un lugar vacío
+def test_buscarPersona_noExiste(personas_buscables):
+    assert Persona.buscar_persona(99999999) == (None, 2)
+    assert Persona.buscar_persona(1111111) == (None, 2)
+    assert Persona.buscar_persona(25000000) == (None, 2)
+# Árbol vacío
+def test_buscarPersona_arbolVacio():
+    assert Persona.buscar_persona(12345678) == (None, 0)
+# Se puede llamar desde una instancia y desde las subclases
+def test_buscarPersona_desdeInstanciaYSubclases(persona_base, mock_validaciones):
+    admin = Administrador("Ana", 23456789, 1111111111)
+    solicitante = Solicitante("Luis", 34567890, 1122222222)
+    assert persona_base.buscar_persona(12345678)[0] is persona_base
+    assert Administrador.buscar_persona(23456789)[0] is admin
+    assert Solicitante.buscar_persona(34567890)[0] is solicitante
+    assert Persona.buscar_persona(23456789)[0] is admin
+# La búsqueda no modifica el árbol
+def test_buscarPersona_noModificaElArbol(personas_buscables):
+    Persona.buscar_persona(10000000)
+    Persona.buscar_persona(99999999)
+    assert dnis_registrados() == [10000000, 20000000, 30000000]
+# Delega la búsqueda en el árbol de DNIs
+def test_buscarPersona_delegaEnElArbol(mocker):
+    mock_arbol = mocker.patch.object(Persona, "dnis_registrados")
+    mock_arbol.buscar_con_saltos.return_value = ("persona", 3)
+    assert Persona.buscar_persona(12345678) == ("persona", 3)
+    mock_arbol.buscar_con_saltos.assert_called_once_with(12345678)
+
+
+# ---------- orden_arbol ----------
+# Personas con DNI 1000001 a 1000007 insertadas en orden creciente (árbol degenerado)
+@pytest.fixture
+def siete_personas(mock_validaciones):
+    return list(map(lambda dni: Persona(f"Persona {dni}", dni, 1123456789), range(1000001, 1000008)))
+
+# Funcionamiento normal: devuelve las personas en el orden en que quedan insertadas
+def test_ordenArbol_ok(siete_personas):
+    resultado = Persona.orden_arbol()
+    assert list(map(lambda p: p.getter_dni(), resultado)) == [1000004, 1000002, 1000001, 1000003, 1000006, 1000005, 1000007]
+    assert sorted(resultado, key = lambda p: p.getter_dni()) == siete_personas
+# Antes el árbol es lineal; después queda balanceado
+def test_ordenArbol_balancea(siete_personas):
+    assert Persona.buscar_persona(1000007)[1] == 6
+    Persona.orden_arbol()
+    saltos = list(map(lambda dni: Persona.buscar_persona(dni)[1], range(1000001, 1000008)))
+    assert max(saltos) == 2
+    assert Persona.buscar_persona(1000004) == (siete_personas[3], 0)
+# No pierde personas ni cambia el orden de los DNIs
+def test_ordenArbol_conservaPersonas(siete_personas):
+    Persona.orden_arbol()
+    assert dnis_registrados() == list(range(1000001, 1000008))
+    for persona in siete_personas:
+        assert Persona.buscar_persona(persona.getter_dni())[0] is persona
+# Conserva el tipo de cada persona
+def test_ordenArbol_conservaSubclases(mock_validaciones):
+    persona = Persona("Juan", 1000001, 1123456789)
+    admin = Administrador("Ana", 1000002, 1111111111)
+    solicitante = Solicitante("Luis", 1000003, 1122222222)
+    resultado = Persona.orden_arbol()
+    assert resultado == [admin, persona, solicitante]
+    assert Persona.buscar_persona(1000002)[0] is admin
+    assert type(Persona.buscar_persona(1000003)[0]) is Solicitante
+# Árbol vacío
+def test_ordenArbol_arbolVacio():
+    assert Persona.orden_arbol() == []
+    assert Persona.getter_dnis_registrados().esVacio()
+# Se puede llamar más de una vez: el resultado es el mismo
+def test_ordenArbol_variasVeces(siete_personas):
+    primero = Persona.orden_arbol()
+    segundo = Persona.orden_arbol()
+    assert primero == segundo
+    assert dnis_registrados() == list(range(1000001, 1000008))
+# Se pueden seguir registrando personas después de ordenar
+def test_ordenArbol_seguirRegistrando(siete_personas, mock_validaciones):
+    Persona.orden_arbol()
+    nueva = Persona("Nueva", 1000100, 1123456789)
+    assert Persona.buscar_persona(1000100)[0] is nueva
+    assert dnis_registrados() == [1000001, 1000002, 1000003, 1000004, 1000005, 1000006, 1000007, 1000100]
+# Usa el árbol para ordenar: inorden --> ordenar --> arma un árbol nuevo
+def test_ordenArbol_delegaEnElArbol(mocker):
+    mock_arbol_viejo = mocker.patch.object(Persona, "dnis_registrados")
+    mock_arbol_nuevo = mocker.patch("persona.Arbol").return_value
+    persona1 = mocker.Mock(spec = Persona)
+    persona2 = mocker.Mock(spec = Persona)
+    persona3 = mocker.Mock(spec = Persona)
+    mock_arbol_viejo.getter_raiz.return_value = "raiz"
+    mock_arbol_viejo.inorden.return_value = [(1, persona1), (2, persona2), (3, persona3)]
+    mock_arbol_viejo.ordenar.return_value = [(2, persona2), (1, persona1), (3, persona3)]
+    resultado = Persona.orden_arbol()
+    mock_arbol_viejo.inorden.assert_called_once_with("raiz")
+    mock_arbol_viejo.ordenar.assert_called_once_with([(1, persona1), (2, persona2), (3, persona3)])
+    # Inserta en el árbol nuevo en el orden que devolvió ordenar
+    assert mock_arbol_nuevo.insertar.call_args_list == [mocker.call(2, persona2), mocker.call(1, persona1), mocker.call(3, persona3)]
+    mock_arbol_viejo.insertar.assert_not_called()
+    assert Persona.getter_dnis_registrados() is mock_arbol_nuevo
+    assert resultado == [persona2, persona1, persona3]
 
 
 # ---------- serializar ----------

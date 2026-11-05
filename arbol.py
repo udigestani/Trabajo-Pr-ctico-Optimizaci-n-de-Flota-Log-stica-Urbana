@@ -80,9 +80,16 @@ class Arbol:
     def inorden(self, sub_arbol):
         if sub_arbol == None:
             return []
-        return self.inorden(sub_arbol.getter_izquierdo()) + [sub_arbol.getter_dato()] + self.inorden(sub_arbol.getter_derecho())
+        return self.inorden(sub_arbol.getter_izquierdo()) + [(sub_arbol.getter_dato(), sub_arbol.getter_instancia())] + self.inorden(sub_arbol.getter_derecho())
     def posorden(self, sub_arbol):
         if sub_arbol != None:
             self.posorden(sub_arbol.getter_izquierdo())
             self.posorden(sub_arbol.getter_derecho())
             print(sub_arbol, end = ' ')
+    def ordenar(self, dnis_instancias):
+        if len(dnis_instancias) <= 2:
+            return dnis_instancias
+        medio = len(dnis_instancias) // 2
+        previos = dnis_instancias[:medio]
+        post = dnis_instancias[medio+1:]
+        return [dnis_instancias[medio]] + self.ordenar(previos) + self.ordenar(post)

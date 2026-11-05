@@ -5,6 +5,7 @@ from politicaordenamiento import Vecinos, VentanasTiempo
 from validaciones import Validaciones
 from excepciones import DatoInvalidoError, VentanaIncumplidaError, RutaIncompletaError, ViajeVacioError
 from arbol import Arbol
+from solicitud import Solicitud
 
 class Persona:
     dnis_registrados = Arbol()
@@ -20,6 +21,10 @@ class Persona:
         return self.dni
     def getter_telefono(self):
         return self.telefono
+
+    @classmethod
+    def buscar_persona(cls, dni):
+        return cls.dnis_registrados.buscar_con_saltos(dni)
 
     @classmethod
     def getter_dnis_registrados(cls):
@@ -42,6 +47,15 @@ class Persona:
 
     def serializar(self):
         return [self.__class__.__name__, self.nombre, self.dni, self.telefono]
+
+    @classmethod
+    def orden_arbol(cls):
+        dnis_instancias = cls.dnis_registrados.inorden(cls.dnis_registrados.getter_raiz())
+        dnis_instancias = cls.dnis_registrados.ordenar(dnis_instancias)
+        cls.dnis_registrados = Arbol()
+        for dni, instancia in dnis_instancias:
+            cls.dnis_registrados.insertar(dni, instancia)
+        return list(map(lambda x: x[1], dnis_instancias))
 
     @staticmethod
     def deserializar(archivo, contexto = None):
@@ -155,6 +169,10 @@ class Solicitante(Persona):
     @staticmethod
     def crear_solicitud(viaje, destino, ventana_inicio, ventana_fin, *articulos):
         Validaciones.validar_instancia(viaje, clase = Viaje, nombre = "viaje")
-        return viaje.crear_solicitud(destino, ventana_inicio, ventana_fin, *articulos)
+        viaje.validar_estado("crear_solicitud", "PLANIFICADO")
+        nueva_solicitud = Solicitud(destino, ventana_inicio, ventana_fin, *articulos)
+        viaje.agregar_solicitud(nueva_solicitud)
+        return nueva_solicitud
+
     def __str__(self):
         return f"Solicitante de nombre {self.nombre} y DNI: {self.dni}"
