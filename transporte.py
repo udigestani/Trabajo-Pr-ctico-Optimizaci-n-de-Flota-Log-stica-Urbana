@@ -84,7 +84,7 @@ class Furgoneta(Transporte):
     VELOCIDAD = 30
     COSTO_KM = 2
     COSTO_PARADA = 5
-    FACTOR_AMBIENTAL = 0.27
+    FACTOR_AMBIENTAL = 0.5
 
     def __init__(self):
         super().__init__(

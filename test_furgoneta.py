@@ -27,7 +27,7 @@ def test_furgoneta_atributosClase():
     assert Furgoneta.VELOCIDAD == 30
     assert Furgoneta.COSTO_KM == 2
     assert Furgoneta.COSTO_PARADA == 5
-    assert Furgoneta.FACTOR_AMBIENTAL == 0.27
+    assert Furgoneta.FACTOR_AMBIENTAL == 0.5
 
 # Funcionamiento normal
 def test_furgoneta_ok(furgoneta):
@@ -36,7 +36,7 @@ def test_furgoneta_ok(furgoneta):
     assert furgoneta.getter_velocidad() == 30
     assert furgoneta.getter_costo_km() == 2
     assert furgoneta.getter_costo_parada() == 5
-    assert furgoneta.getter_factor_ambiental() == 0.27
+    assert furgoneta.getter_factor_ambiental() == 0.5
     # id
     assert furgoneta.getter_id() == 1
     furgoneta2 = Furgoneta()
@@ -64,12 +64,12 @@ def test_furgoneta_validaciones(mock_validaciones):
     mock_validaciones.validar_numero.assert_any_call(30, nombre = "velocidad")
     mock_validaciones.validar_numero.assert_any_call(2, nombre = "costo_km")
     mock_validaciones.validar_numero.assert_any_call(5, cero = True, nombre = "costo_parada")
-    mock_validaciones.validar_numero.assert_any_call(0.27, nombre = "factor_ambiental")
+    mock_validaciones.validar_numero.assert_any_call(0.5, nombre = "factor_ambiental")
 
 # Impacto ambiental
 def test_furgoneta_impactoAmbiental_ok(furgoneta):
-    assert furgoneta.calcular_impacto_ambiental(10, 100) == 2.7
-    assert furgoneta.calcular_impacto_ambiental(10, 0) == 2.7
+    assert furgoneta.calcular_impacto_ambiental(10, 100) == 5.0
+    assert furgoneta.calcular_impacto_ambiental(10, 0) == 5.0
     assert furgoneta.calcular_impacto_ambiental(0, 50) == 0
 # Errores en impacto ambiental
 def test_furgoneta_distanciaNegativa(furgoneta_real):
@@ -112,4 +112,4 @@ def test_furgoneta_pesoInvalidoMock(mocker):
 
 # Serializar
 def test_furgoneta_serializar(furgoneta):
-    assert furgoneta.serializar() == ["Furgoneta", 1, 500, 8, 30, 2, 5, 0.27]
+    assert furgoneta.serializar() == ["Furgoneta", 1, 500, 8, 30, 2, 5, 0.5]

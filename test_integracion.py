@@ -61,7 +61,7 @@ def test_aceptacion_ok(viaje_con_solicitudes, s1, s2):
     assert viaje.validar_recorrido([s1, s2]) is True
     assert viaje.distancia_total() == 45
     assert viaje.costo_total() == 100
-    assert round(viaje.impacto_ambiental(), 2) == 12.15
+    assert round(viaje.impacto_ambiental(), 2) == 22.5
 # Si la ventana de S2 termina a las 09:55 se rechaza y el viaje conserva solo S1
 def test_aceptacion_ventanaIncumplida(viaje, s1):
     s2_tarde = Solicitud("S2", hora(9, 30), hora(9, 55), Articulo("Libros", 150, 3))
